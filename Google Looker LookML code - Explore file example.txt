@@ -1,0 +1,1406 @@
+# back_office
+include: "/back_office/Derived_Table_Views/Aggregate_Measures/agg_wni_reweigh_revenue.view"
+include: "/back_office/Explores/reweigh_explore.lkml"
+
+# finance
+include: "/finance/Derived_Table_Views/Aggregate_Tables/fin_agg_dl_finance_report_rds.view"
+include: "/finance/Derived_Table_Views/Aggregate_Tables/fin_agg_dl_finance_shipments.view"
+
+# global_bi_folder
+include: "/global_bi_folder/Derived_Table_Views/date_comparison.view.lkml"
+include: "/global_bi_folder/Derived_Table_Views/rev_days_vw.view.lkml"
+include: "/global_bi_folder/Views/loc_operations_hierarchy_flatten.view"
+
+# linehaul
+include: "/linehaul/Derived_Table_Views/Aggregate_Measures/*.view"
+include: "/linehaul/Derived_Table_Views/financial_load_factor.view"
+include: "/linehaul/Derived_Table_Views/Aggregate_Measures/linehaul_agg_dl_linehaul_exe_mtrc.view"
+
+# operations
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_appt_shpmt_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_bill2_weight.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_claims_filed_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_cwt_bill_cnt_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_dim_accrcy_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_dlvry_exe_charged_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_dlvry_exe_excluded_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_dmg_xcp_chrg_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_dock_credit_mtr_mv_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_xdock_events_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_ml_xdock_events_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_g_g12_ontm_pct_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_lbr_cst_hr_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_live_pickup_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_otb_rwgh_opp_cnt_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_pnd_trip_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_pu_rqst_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_rev_wgt_yld_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_rwgh_cnt_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_sfy_accidents_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_sfy_drivecam_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_sfy_injuries_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_tdc_shpmt_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_trnst_ontm_pct_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dls_dock_initial_stage_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dls_valid_dock_mtr_mv_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_mnt_cost_mtrc.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dls_dock_efficiency_mtrc.view"
+include: "/operations/Derived_Table_Views/door_count.view"
+include: "/operations/Derived_Table_Views/intermediate_held_shipments.view"
+include: "/operations/Derived_Table_Views/invoice_accuracy.view"
+include: "/operations/Derived_Table_Views/master_date_sic_table.view"
+include: "/operations/Derived_Table_Views/mnt_active_unit.view"
+include: "/operations/Derived_Table_Views/navigation.view"
+include: "/operations/Derived_Table_Views/operations_lst_rev_day.view"
+include: "/operations/Views/sfy_accident_miles.view"
+include: "/operations/Views/sfy_injury_hours.view"
+include: "/operations/Derived_Table_Views/Aggregate_Measures/operations_agg_dl_mnt_cost_mtrc.view"
+include: "/operations/Derived_Table_Views/operations_mnt_labor_cost_goal_by_month.view"
+include: "/operations/Refinements/pre_computed_calendar.view"
+
+#WNI
+include: "/back_office/Views_Extended/wni_agg_dl_rev.view"
+include: "/back_office/Views_Extended/wni_agg_dl_goal.view"
+
+
+#An explore for date and sic level KPIs in OPS and Linehaul
+explore: master_date_sic_table {
+  description: "Shows date and sic level KPIs in OPS and Linehaul"
+  persist_with: operations_default_datagroup
+  label: "Key Performance Indicators"
+  fields: [
+    pre_computed_calendar.cldr_date_date,
+    pre_computed_calendar.cldr_date_week,
+    pre_computed_calendar.cldr_date_week_of_year,
+    pre_computed_calendar.wk_nbr_trending,
+    pre_computed_calendar.cldr_date_month,
+    pre_computed_calendar.cldr_date_month_name,
+    pre_computed_calendar.month_name_3char,
+    pre_computed_calendar.cldr_date_quarter,
+    pre_computed_calendar.cldr_date_year,
+    pre_computed_calendar.year_trending,
+    pre_computed_calendar.rev_day,
+    pre_computed_calendar.is_lst_rev_date,
+    pre_computed_calendar.min_cldr_date,
+    pre_computed_calendar.max_cldr_date,
+    pre_computed_calendar.sum_rev_day,
+    pre_computed_calendar.rev_day_goal_factor,
+    pre_computed_calendar.ind_mtd,
+    pre_computed_calendar.ind_mo,
+    pre_computed_calendar.ind_ytd,
+    pre_computed_calendar.sum_rev_day_mo,
+    pre_computed_calendar.sum_rev_day_mtd,
+    pre_computed_calendar.sum_rev_day_complete_month_month12_ago,
+    pre_computed_calendar.cldr_date_range_paramater,
+    pre_computed_calendar.cldr_date_range_dim,
+    loc_operations_hierarchy_flatten*,
+    goal_sic*,
+    operations_agg_dl_lbr_cst_hr_mtrc*,
+    operations_agg_dl_rev_wgt_yld_mtrc*,
+    operations_agg_dl_cwt_bill_cnt_mtrc*,
+    dock_valid_load_mtr_mv_wgt*,
+    operations_agg_dl_g_g12_ontm_pct_mtrc*,
+    operations_agg_dl_trnst_ontm_pct_mtrc*,
+    linehaul_agg_dl_linehaul_exe_mtrc*,
+    linehaul_agg_dl_mdl_cmp_mtrc*,
+    operations_agg_dl_dlvry_exe_charged_mtrc*,
+    operations_agg_dl_dlvry_exe_excluded_mtrc*,
+    operations_agg_dl_appt_shpmt_mtrc*,
+    operations_agg_dl_tdc_shpmt_mtrc*,
+    operations_agg_dl_pnd_trip_mtrc*,
+    operations_agg_dl_pu_rqst_mtrc*,
+    invoice_accuracy*,
+    operations_agg_mnt_cost_mtrc*,
+    master_date_sic_table.navigation_tab*,
+    date_comparison*,
+    linehaul_agg_dl_hss_mtrc*,
+    linehaul_agg_dl_bypass_mdl_cmp*,
+    linehaul_agg_dl_linehaul_exe_by_ariv_mtrc*
+    ,operations_agg_dl_rwgh_cnt_mtrc.agg_otb_osc_cred_rwgh_pct
+    ,agg_wni_reweigh_revenue*
+    ,operations_agg_dl_bill2_weight*
+    ,linehaul_agg_dl_linehaul_exe_by_ariv_mtrc*,
+    operations_agg_dl_rwgh_cnt_mtrc.agg_otb_osc_cred_rwgh_pct,
+    operations_agg_dl_claims_filed_mtrc*,
+    operations_agg_dls_dock_initial_stage_mtrc*,
+    operations_agg_dl_dmg_xcp_chrg_mtrc*,
+    operations_agg_dls_valid_dock_mtr_mv_mtrc*,
+    operations_agg_dl_dock_credit_mtr_mv_mtrc*,
+    operations_agg_dl_sfy_injuries_mtrc*,
+    operations_agg_dl_sfy_accidents_mtrc*,
+    operations_agg_dl_sfy_drivecam_mtrc*,
+    sfy_injury_hours.sum_lbr_operations_drtn_hr,
+    sfy_injury_hours.sum_lbr_operations_salary_drtn_hr,
+    sfy_injury_hours.sum_disp_sch_drtn_hr,
+    sfy_injury_hours.injr_elgbl_emp_drtn_hr,
+    sfy_accident_miles.sum_sfy_miles,
+    operations_agg_dls_dock_efficiency_mtrc*,
+    navigation.summary_nav,
+    navigation.descriptions_nav,
+    navigation.trends_nav,
+    navigation.stackranking_nav,
+    navigation.nav_tab_dlvry_exec*,
+    navigation.dope_dock_nav,
+    navigation.dope_PD_nav,
+    navigation.dope_quality_nav,
+    navigation.dope_safety_nav,
+    navigation.dope_linehaul_nav,
+    navigation.gladiator_nav,
+    navigation.gladiator_freight_nav,
+    operations_agg_dl_live_pickup_mtrc*,
+    operations_agg_dl_dim_accrcy_mtrc*,
+    mnt_active_unit.total_tractor_unit,
+    mnt_active_unit.is_tractor_unit,
+    door_count.total_active_door_count,
+    intermediate_held_shipments.total_intermediate_shipments,
+    operations_agg_dl_xdock_events_mtrc.damage_recording_pct,
+    operations_agg_dl_xdock_events_mtrc.qualification,
+    operations_agg_ml_xdock_events_mtrc.qualification,
+    operations_agg_ml_xdock_events_mtrc.qualification_count,
+    fin_agg_dl_finance_report_rds.agg_count_shpmt,
+    fin_agg_dl_finance_report_rds.agg_sum_weight,
+    fin_agg_dl_finance_report_rds.agg_sum_net_revenue,
+    fin_agg_dl_finance_report_rds.agg_sum_net_revenue_less_fsc,
+    fin_agg_dl_finance_report_rds.agg_length_of_haul,
+    wni_agg_dl_rev.sum_rwgh_corr_rcvr_pos_rev,
+    wni_agg_dl_rev.sum_insp_corr_rcvr_rev,
+    fin_agg_dl_finance_shipments.agg_sum_accsrl_prda_line,
+    operations_agg_dl_mnt_cost_mtrc.agg_total_maintenance_cost,
+    wni_agg_dl_rwgh_goal.sum_tot_rwgh_goal,
+    wni_agg_dl_insp_goal.sum_tot_insp_goal,
+    operations_mnt_labor_cost_goal_by_month.mnt_labor_cost_goal_per_day,
+
+  ]
+  # adds a condition to filter on partition dates in the where clause
+  sql_always_where: {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+                        {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                          ${master_date_sic_table.CLDR_DT} = ${operations_lst_rev_day.operations_lst_rev_date}
+                          and ${pre_computed_calendar.cldr_date_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+                        {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                          ${master_date_sic_table.CLDR_DT} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+                          and ${pre_computed_calendar.cldr_date_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+                        {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                          ${master_date_sic_table.CLDR_DT} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+                          and ${pre_computed_calendar.cldr_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+                        {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                          ${master_date_sic_table.CLDR_DT} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+                          and ${pre_computed_calendar.cldr_date_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+                        {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                          ${master_date_sic_table.CLDR_DT} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+                          and ${pre_computed_calendar.cldr_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+                        {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                          ${master_date_sic_table.CLDR_DT} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+                          and ${pre_computed_calendar.cldr_date_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+                        {% else %} 1=1
+                    {% endif %}
+                    {% else %} 1=1
+                    {% endif %} ;;
+  join: operations_lst_rev_day {
+    relationship: many_to_one
+    type: cross
+  }
+  join: date_comparison {
+    relationship: one_to_one
+    type: cross
+    sql_where:
+    (${date_comparison.period} = 'Last Rev Day'
+      and
+    {% condition date_comparison.lst_rev_day_selector %} ${pre_computed_calendar.cldr_date_date} = ${operations_lst_rev_day.operations_lst_rev_date} {%endcondition%})
+    or
+    (${date_comparison.period} = 'Last Week'
+      and
+    {% condition date_comparison.lst_wk_selector %} ${pre_computed_calendar.ind_wk}=-1 {%endcondition%})
+    or
+    (${date_comparison.period} = 'MTD'
+      and
+    {% condition date_comparison.mtd_selector %} ${pre_computed_calendar.ind_mtd}=0 {%endcondition%})
+    or
+    (${date_comparison.period} = 'YTD'
+      and
+    {% condition date_comparison.ytd_selector %} ${pre_computed_calendar.ind_ytd}=0 {%endcondition%})
+    or
+    (${date_comparison.period} = 'Date Range'
+      and
+    {% condition date_comparison.date_range_selector %} cast(${pre_computed_calendar.cldr_date_date} as timestamp) {%endcondition%})
+    ;;
+  }
+  join: pre_computed_calendar {
+    view_label: "Calendar"
+    relationship: many_to_one
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${pre_computed_calendar.cldr_date_date} ;;
+    # The sql_where is for the calendar date range paramater.  It is required in order to use that parameter.
+    sql_where: ${pre_computed_calendar.cldr_date_range_dim} ;;
+  }
+  join: loc_operations_hierarchy_flatten {
+    view_label: "Location"
+    relationship: many_to_one
+    type: left_outer
+    sql_on: ${master_date_sic_table.lvl5_sic_cd} = ${loc_operations_hierarchy_flatten.lvl5_sic_cd} ;;
+  }
+# START Added by Martín Longo for TM1s
+  join: mnt_active_unit {
+    view_label: "Tractors"
+    relationship: many_to_one
+    type: left_outer
+    sql_on: ${master_date_sic_table.lvl5_sic_cd} = ${mnt_active_unit.mnt_domicile_sic} ;;
+  }
+  join: door_count {
+    view_label: "Doors"
+    relationship: many_to_one
+    type: left_outer
+    sql_on: ${master_date_sic_table.lvl5_sic_cd} = ${door_count.sic_cd};;
+  }
+  join: intermediate_held_shipments {
+    view_label: "Intermediate held shipments"
+    relationship: one_to_one
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${intermediate_held_shipments.cldr_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${intermediate_held_shipments.sic_cd}
+      and ${intermediate_held_shipments.cldr_dt_date} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${intermediate_held_shipments.cldr_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${intermediate_held_shipments.cldr_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${intermediate_held_shipments.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${intermediate_held_shipments.cldr_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${intermediate_held_shipments.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${intermediate_held_shipments.cldr_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  #END
+  join: goal_sic {
+    view_label: "Goals"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${goal_sic.cldr_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${goal_sic.goal_ref_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${goal_sic.cldr_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${goal_sic.cldr_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${goal_sic.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${goal_sic.cldr_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${goal_sic.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${goal_sic.cldr_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_rev_wgt_yld_mtrc {
+    view_label: "Revenue - Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_rev_wgt_yld_mtrc.cldr_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_rev_wgt_yld_mtrc.sic}
+      and ${operations_agg_dl_rev_wgt_yld_mtrc.cldr_dt_date} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_rev_wgt_yld_mtrc.cldr_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_rev_wgt_yld_mtrc.cldr_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_rev_wgt_yld_mtrc.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_rev_wgt_yld_mtrc.cldr_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_rev_wgt_yld_mtrc.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_rev_wgt_yld_mtrc.cldr_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_rwgh_cnt_mtrc {
+    view_label: "Revenue - Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_rptg_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_at_sic_cd}
+      and ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_rptg_date} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_rptg_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_rptg_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_rptg_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_rptg_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_rptg_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_rwgh_cnt_mtrc.rwgh_rptg_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_otb_rwgh_opp_cnt_mtrc {
+    view_label: "Revenue - Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.pickup_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.origin_sic_code}
+      and ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.pickup_date} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.pickup_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.pickup_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.pickup_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_otb_rwgh_opp_cnt_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: agg_wni_reweigh_revenue {
+    view_label: "Revenue - Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${agg_wni_reweigh_revenue.ordr_wni_rptg_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${agg_wni_reweigh_revenue.ordr_corr_insp_sic_cd}
+      and ${agg_wni_reweigh_revenue.ordr_wni_rptg_dt_date} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${agg_wni_reweigh_revenue.ordr_wni_rptg_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${agg_wni_reweigh_revenue.ordr_wni_rptg_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${agg_wni_reweigh_revenue.ordr_wni_rptg_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${agg_wni_reweigh_revenue.ordr_wni_rptg_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${agg_wni_reweigh_revenue.ordr_wni_rptg_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${agg_wni_reweigh_revenue.ordr_wni_rptg_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_cwt_bill_cnt_mtrc {
+    view_label: "Revenue - Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_cwt_bill_cnt_mtrc.cldr_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_cwt_bill_cnt_mtrc.sic}
+      and ${operations_agg_dl_cwt_bill_cnt_mtrc.cldr_dt_date} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_cwt_bill_cnt_mtrc.cldr_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_cwt_bill_cnt_mtrc.cldr_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_cwt_bill_cnt_mtrc.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_cwt_bill_cnt_mtrc.cldr_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_cwt_bill_cnt_mtrc.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_cwt_bill_cnt_mtrc.cldr_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_lbr_cst_hr_mtrc {
+    view_label: "Labor"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_lbr_cst_hr_mtrc.aply_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_lbr_cst_hr_mtrc.cst_sic_cd}
+      and ${master_date_sic_table.CLDR_DT} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_lbr_cst_hr_mtrc.aply_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_lbr_cst_hr_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_lbr_cst_hr_mtrc.aply_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_lbr_cst_hr_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_lbr_cst_hr_mtrc.aply_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_lbr_cst_hr_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: dock_valid_load_mtr_mv_wgt {  #check partition key
+    view_label: "Dock Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${dock_valid_load_mtr_mv_wgt.calendar_date_date}
+      and ${loc_operations_hierarchy_flatten.lvl4_sic_cd} = ${dock_valid_load_mtr_mv_wgt.sic_term_zn} ;;
+  }
+  join: operations_agg_dl_g_g12_ontm_pct_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_g_g12_ontm_pct_mtrc.cldr_date_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_g_g12_ontm_pct_mtrc.lvl5_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_g_g12_ontm_pct_mtrc.cldr_date_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_g_g12_ontm_pct_mtrc.cldr_date_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_g_g12_ontm_pct_mtrc.cldr_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_g_g12_ontm_pct_mtrc.cldr_date_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_g_g12_ontm_pct_mtrc.cldr_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_g_g12_ontm_pct_mtrc.cldr_date_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_trnst_ontm_pct_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_trnst_ontm_pct_mtrc.delivery_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_trnst_ontm_pct_mtrc.sic}
+      and ${operations_agg_dl_trnst_ontm_pct_mtrc.delivery_date} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_trnst_ontm_pct_mtrc.delivery_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_trnst_ontm_pct_mtrc.delivery_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_trnst_ontm_pct_mtrc.delivery_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_trnst_ontm_pct_mtrc.delivery_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_trnst_ontm_pct_mtrc.delivery_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_trnst_ontm_pct_mtrc.delivery_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: linehaul_agg_dl_linehaul_exe_mtrc {
+    view_label: "Linehaul"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${linehaul_agg_dl_linehaul_exe_mtrc.disp_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${linehaul_agg_dl_linehaul_exe_mtrc.lvl5_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${linehaul_agg_dl_linehaul_exe_mtrc.disp_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${linehaul_agg_dl_linehaul_exe_mtrc.disp_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${linehaul_agg_dl_linehaul_exe_mtrc.disp_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${linehaul_agg_dl_linehaul_exe_mtrc.disp_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${linehaul_agg_dl_linehaul_exe_mtrc.disp_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${linehaul_agg_dl_linehaul_exe_mtrc.disp_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: linehaul_agg_dl_mdl_cmp_mtrc {
+    view_label: "Linehaul"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${linehaul_agg_dl_mdl_cmp_mtrc.mod_actl_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${linehaul_agg_dl_mdl_cmp_mtrc.mod_actl_sic}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${linehaul_agg_dl_mdl_cmp_mtrc.mod_actl_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${linehaul_agg_dl_mdl_cmp_mtrc.mod_actl_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${linehaul_agg_dl_mdl_cmp_mtrc.mod_actl_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${linehaul_agg_dl_mdl_cmp_mtrc.mod_actl_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${linehaul_agg_dl_mdl_cmp_mtrc.mod_actl_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${linehaul_agg_dl_mdl_cmp_mtrc.mod_actl_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: linehaul_agg_dl_bypass_mdl_cmp {
+    view_label: "Linehaul"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${linehaul_agg_dl_bypass_mdl_cmp.bypass_model_inst_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${linehaul_agg_dl_bypass_mdl_cmp.trlr_clsd_at_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${linehaul_agg_dl_bypass_mdl_cmp.bypass_model_inst_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${linehaul_agg_dl_bypass_mdl_cmp.bypass_model_inst_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${linehaul_agg_dl_bypass_mdl_cmp.bypass_model_inst_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${linehaul_agg_dl_bypass_mdl_cmp.bypass_model_inst_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${linehaul_agg_dl_bypass_mdl_cmp.bypass_model_inst_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${linehaul_agg_dl_bypass_mdl_cmp.bypass_model_inst_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_bill2_weight {
+    view_label: "Ton Miles"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_bill2_weight.cldr_date_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_bill2_weight.lvl5_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_bill2_weight.cldr_date_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_bill2_weight.cldr_date_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_bill2_weight.cldr_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_bill2_weight.cldr_date_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_bill2_weight.cldr_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_bill2_weight.cldr_date_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_dlvry_exe_charged_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_dlvry_exe_charged_mtrc.calendar_date}
+      and ${operations_agg_dl_rev_wgt_yld_mtrc.sic} = ${operations_agg_dl_dlvry_exe_charged_mtrc.dest_sic_dsa}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_dlvry_exe_charged_mtrc.calendar_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_dlvry_exe_charged_mtrc.calendar_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_dlvry_exe_charged_mtrc.calendar_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_dlvry_exe_charged_mtrc.calendar_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_dlvry_exe_charged_mtrc.calendar_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_dlvry_exe_charged_mtrc.calendar_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_dlvry_exe_excluded_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_dlvry_exe_excluded_mtrc.calendar_date}
+      and ${operations_agg_dl_rev_wgt_yld_mtrc.sic} = ${operations_agg_dl_dlvry_exe_excluded_mtrc.dest_sic_dsa}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_dlvry_exe_excluded_mtrc.calendar_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_dlvry_exe_excluded_mtrc.calendar_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_dlvry_exe_excluded_mtrc.calendar_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_dlvry_exe_excluded_mtrc.calendar_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_dlvry_exe_excluded_mtrc.calendar_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_dlvry_exe_excluded_mtrc.calendar_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_appt_shpmt_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_appt_shpmt_mtrc.new_mvmt_tmst_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_appt_shpmt_mtrc.destination_sic}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_appt_shpmt_mtrc.new_mvmt_tmst_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_appt_shpmt_mtrc.new_mvmt_tmst_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_appt_shpmt_mtrc.new_mvmt_tmst_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_appt_shpmt_mtrc.new_mvmt_tmst_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_appt_shpmt_mtrc.new_mvmt_tmst_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_appt_shpmt_mtrc.new_mvmt_tmst_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_tdc_shpmt_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_tdc_shpmt_mtrc.new_mvmt_tmst_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_tdc_shpmt_mtrc.destination_sic}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_tdc_shpmt_mtrc.new_mvmt_tmst_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_tdc_shpmt_mtrc.new_mvmt_tmst_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_tdc_shpmt_mtrc.new_mvmt_tmst_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_tdc_shpmt_mtrc.new_mvmt_tmst_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_tdc_shpmt_mtrc.new_mvmt_tmst_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_tdc_shpmt_mtrc.new_mvmt_tmst_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_pnd_trip_mtrc {
+    view_label: "Pickup and Delivery"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_pnd_trip_mtrc.trp_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_pnd_trip_mtrc.trp_orig_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_pnd_trip_mtrc.trp_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_pnd_trip_mtrc.trp_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_pnd_trip_mtrc.trp_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_pnd_trip_mtrc.trp_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_pnd_trip_mtrc.trp_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_pnd_trip_mtrc.trp_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_pu_rqst_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_pu_rqst_mtrc.pkup_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_pu_rqst_mtrc.lvl5_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_pu_rqst_mtrc.pkup_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_pu_rqst_mtrc.pkup_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_pu_rqst_mtrc.pkup_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_pu_rqst_mtrc.pkup_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_pu_rqst_mtrc.pkup_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_pu_rqst_mtrc.pkup_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: invoice_accuracy {
+    view_label: "Invoice Accuracy"
+    type: left_outer
+    sql_on: ${invoice_accuracy.mo_month} = ${pre_computed_calendar.cldr_date_month} and ${invoice_accuracy.mo_month} = ${goal_sic.cldr_dt_month} ;;
+    relationship: one_to_many
+  }
+  join: operations_agg_mnt_cost_mtrc {
+    view_label: "Maintenance Cost"
+    relationship: one_to_one
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_mnt_cost_mtrc.aply_dt_date}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_mnt_cost_mtrc.aply_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_mnt_cost_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_mnt_cost_mtrc.aply_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_mnt_cost_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_mnt_cost_mtrc.aply_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_mnt_cost_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %};;
+
+  }
+  join: linehaul_agg_dl_hss_mtrc {
+    view_label: "Linehaul"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${linehaul_agg_dl_hss_mtrc.hss_actual_disp_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${linehaul_agg_dl_hss_mtrc.hss_leg_orig_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${linehaul_agg_dl_hss_mtrc.hss_actual_disp_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${linehaul_agg_dl_hss_mtrc.hss_actual_disp_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${linehaul_agg_dl_hss_mtrc.hss_actual_disp_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${linehaul_agg_dl_hss_mtrc.hss_actual_disp_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${linehaul_agg_dl_hss_mtrc.hss_actual_disp_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${linehaul_agg_dl_hss_mtrc.hss_actual_disp_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: linehaul_agg_dl_linehaul_exe_by_ariv_mtrc {
+    view_label: "Linehaul"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${linehaul_agg_dl_linehaul_exe_by_ariv_mtrc.actl_ariv_dt_lcl_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${linehaul_agg_dl_linehaul_exe_by_ariv_mtrc.sch_dest_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${linehaul_agg_dl_linehaul_exe_by_ariv_mtrc.actl_ariv_dt_lcl_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${linehaul_agg_dl_linehaul_exe_by_ariv_mtrc.actl_ariv_dt_lcl_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${linehaul_agg_dl_linehaul_exe_by_ariv_mtrc.actl_ariv_dt_lcl_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${linehaul_agg_dl_linehaul_exe_by_ariv_mtrc.actl_ariv_dt_lcl_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${linehaul_agg_dl_linehaul_exe_by_ariv_mtrc.actl_ariv_dt_lcl_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${linehaul_agg_dl_linehaul_exe_by_ariv_mtrc.actl_ariv_dt_lcl_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_claims_filed_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_claims_filed_mtrc.filing_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_claims_filed_mtrc.destination_sic_code}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_claims_filed_mtrc.filing_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_claims_filed_mtrc.filing_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_claims_filed_mtrc.filing_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_claims_filed_mtrc.filing_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_claims_filed_mtrc.filing_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_claims_filed_mtrc.filing_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dls_dock_initial_stage_mtrc {
+    view_label: "Dock Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dls_dock_initial_stage_mtrc.fac_evnt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dls_dock_initial_stage_mtrc.fac_evnt_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dls_dock_initial_stage_mtrc.fac_evnt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dls_dock_initial_stage_mtrc.fac_evnt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dls_dock_initial_stage_mtrc.fac_evnt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dls_dock_initial_stage_mtrc.fac_evnt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dls_dock_initial_stage_mtrc.fac_evnt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dls_dock_initial_stage_mtrc.fac_evnt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_dmg_xcp_chrg_mtrc {
+    view_label: "Quality & Service"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_dmg_xcp_chrg_mtrc.delivery_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_dmg_xcp_chrg_mtrc.emp_dom_sic}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_dmg_xcp_chrg_mtrc.delivery_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_dmg_xcp_chrg_mtrc.delivery_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_dmg_xcp_chrg_mtrc.delivery_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_dmg_xcp_chrg_mtrc.delivery_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_dmg_xcp_chrg_mtrc.delivery_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_dmg_xcp_chrg_mtrc.delivery_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+
+  join: operations_agg_dl_xdock_events_mtrc {
+    view_label: "XDock Events"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_xdock_events_mtrc.fac_evnt_dt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_xdock_events_mtrc.location_code}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_xdock_events_mtrc.fac_evnt_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_xdock_events_mtrc.fac_evnt_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_xdock_events_mtrc.fac_evnt_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_xdock_events_mtrc.fac_evnt_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_xdock_events_mtrc.fac_evnt_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_xdock_events_mtrc.fac_evnt_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+
+  join: operations_agg_ml_xdock_events_mtrc {
+    view_label: "XDock Events"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: format_date("%G-%m", ${master_date_sic_table.CLDR_DT}) = ${operations_agg_ml_xdock_events_mtrc.cldr_date_month}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_ml_xdock_events_mtrc.lvl3_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_ml_xdock_events_mtrc.cldr_date_month} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_ml_xdock_events_mtrc.cldr_date_month} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_ml_xdock_events_mtrc.cldr_date_month} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_ml_xdock_events_mtrc.cldr_date_month} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif operations_agg_ml_xdock_events_mtrc.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_ml_xdock_events_mtrc.cldr_date_month} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_ml_xdock_events_mtrc.cldr_date_month} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+
+  join: operations_agg_dls_valid_dock_mtr_mv_mtrc {
+    view_label: "Dock Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dls_valid_dock_mtr_mv_mtrc.adj_fac_evnt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dls_valid_dock_mtr_mv_mtrc.fac_evnt_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dls_valid_dock_mtr_mv_mtrc.adj_fac_evnt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dls_valid_dock_mtr_mv_mtrc.adj_fac_evnt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dls_valid_dock_mtr_mv_mtrc.adj_fac_evnt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dls_valid_dock_mtr_mv_mtrc.adj_fac_evnt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dls_valid_dock_mtr_mv_mtrc.adj_fac_evnt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dls_valid_dock_mtr_mv_mtrc.adj_fac_evnt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: operations_agg_dl_dock_credit_mtr_mv_mtrc {
+    view_label: "Dock Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_dock_credit_mtr_mv_mtrc.fac_evnt_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_dock_credit_mtr_mv_mtrc.fac_evnt_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dl_dock_credit_mtr_mv_mtrc.fac_evnt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dl_dock_credit_mtr_mv_mtrc.fac_evnt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dl_dock_credit_mtr_mv_mtrc.fac_evnt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dl_dock_credit_mtr_mv_mtrc.fac_evnt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dl_dock_credit_mtr_mv_mtrc.fac_evnt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dl_dock_credit_mtr_mv_mtrc.fac_evnt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: sfy_injury_hours {
+    view_label: "Injuries"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${sfy_injury_hours.calendar_date_date}
+       and ${master_date_sic_table.lvl5_sic_cd} = ${sfy_injury_hours.loc_sic_slt}
+       and
+             {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+               {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                 ${sfy_injury_hours.calendar_date_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+               {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                 ${sfy_injury_hours.calendar_date_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+               {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                 ${sfy_injury_hours.calendar_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+               {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                 ${sfy_injury_hours.calendar_date_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+               {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                 ${sfy_injury_hours.calendar_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+               {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                 ${sfy_injury_hours.calendar_date_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+               {% else %} 1=1
+               {% endif %}
+             {% else %} 1=1
+             {% endif %} ;;
+  }
+
+  join: operations_agg_dl_sfy_injuries_mtrc {
+    view_label: "Injuries"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_sfy_injuries_mtrc.injry_crte_dt_pst_date}
+           and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_sfy_injuries_mtrc.location_code}
+           and
+                 {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+                   {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                     ${operations_agg_dl_sfy_injuries_mtrc.injry_crte_dt_pst_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                     ${operations_agg_dl_sfy_injuries_mtrc.injry_crte_dt_pst_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                     ${operations_agg_dl_sfy_injuries_mtrc.injry_crte_dt_pst_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                     ${operations_agg_dl_sfy_injuries_mtrc.injry_crte_dt_pst_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                     ${operations_agg_dl_sfy_injuries_mtrc.injry_crte_dt_pst_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                     ${operations_agg_dl_sfy_injuries_mtrc.injry_crte_dt_pst_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+                   {% else %} 1=1
+                   {% endif %}
+                 {% else %} 1=1
+                 {% endif %} ;;
+  }
+
+  join: sfy_accident_miles {
+    view_label: "Accidents"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${sfy_accident_miles.cldr_dt_date}
+           and ${master_date_sic_table.lvl5_sic_cd} = ${sfy_accident_miles.sic_term_cd}
+           and
+                 {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+                   {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                     ${sfy_accident_miles.cldr_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                     ${sfy_accident_miles.cldr_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                     ${sfy_accident_miles.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                     ${sfy_accident_miles.cldr_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                     ${sfy_accident_miles.cldr_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                     ${sfy_accident_miles.cldr_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+                   {% else %} 1=1
+                   {% endif %}
+                 {% else %} 1=1
+                 {% endif %} ;;
+  }
+
+  join: operations_agg_dl_sfy_accidents_mtrc {
+    view_label: "Accidents"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_sfy_accidents_mtrc.acdnt_crte_dt_pst_date}
+         and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_sfy_accidents_mtrc.location_code}
+         and
+               {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+                 {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                   ${operations_agg_dl_sfy_accidents_mtrc.acdnt_crte_dt_pst_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                   ${operations_agg_dl_sfy_accidents_mtrc.acdnt_crte_dt_pst_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                   ${operations_agg_dl_sfy_accidents_mtrc.acdnt_crte_dt_pst_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                   ${operations_agg_dl_sfy_accidents_mtrc.acdnt_crte_dt_pst_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                   ${operations_agg_dl_sfy_accidents_mtrc.acdnt_crte_dt_pst_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                   ${operations_agg_dl_sfy_accidents_mtrc.acdnt_crte_dt_pst_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+                 {% else %} 1=1
+                 {% endif %}
+               {% else %} 1=1
+               {% endif %} ;;
+  }
+
+  join: operations_agg_dl_sfy_drivecam_mtrc {
+    view_label: "Drive Cam"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_sfy_drivecam_mtrc.rec_dttm_pdx_date}
+           and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_sfy_drivecam_mtrc.drvr_emp_location_code}
+           and
+                 {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+                   {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                     ${operations_agg_dl_sfy_drivecam_mtrc.rec_dttm_pdx_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                     ${operations_agg_dl_sfy_drivecam_mtrc.rec_dttm_pdx_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                     ${operations_agg_dl_sfy_drivecam_mtrc.rec_dttm_pdx_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                     ${operations_agg_dl_sfy_drivecam_mtrc.rec_dttm_pdx_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                     ${operations_agg_dl_sfy_drivecam_mtrc.rec_dttm_pdx_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+                   {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                     ${operations_agg_dl_sfy_drivecam_mtrc.rec_dttm_pdx_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+                   {% else %} 1=1
+                   {% endif %}
+                 {% else %} 1=1
+                 {% endif %} ;;
+  }
+  join: operations_agg_dl_live_pickup_mtrc {
+    view_label: "OTB Dimensions"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_live_pickup_mtrc.pickup_date}
+         and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_live_pickup_mtrc.origin_sic_code}
+         and
+               {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+                 {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                   ${operations_agg_dl_live_pickup_mtrc.pickup_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                   ${operations_agg_dl_live_pickup_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                   ${operations_agg_dl_live_pickup_mtrc.pickup_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                   ${operations_agg_dl_live_pickup_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                   ${operations_agg_dl_live_pickup_mtrc.pickup_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                   ${operations_agg_dl_live_pickup_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+                 {% else %} 1=1
+                 {% endif %}
+               {% else %} 1=1
+               {% endif %} ;;
+  }
+
+  join: operations_agg_dl_dim_accrcy_mtrc {
+    view_label: "OTB Dimensions"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_dim_accrcy_mtrc.pickup_date}
+         and ${master_date_sic_table.lvl5_sic_cd} = ${operations_agg_dl_dim_accrcy_mtrc.origin_sic_code}
+         and
+               {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+                 {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                   ${operations_agg_dl_dim_accrcy_mtrc.pickup_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                   ${operations_agg_dl_dim_accrcy_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                   ${operations_agg_dl_dim_accrcy_mtrc.pickup_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                   ${operations_agg_dl_dim_accrcy_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                   ${operations_agg_dl_dim_accrcy_mtrc.pickup_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+                 {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                   ${operations_agg_dl_dim_accrcy_mtrc.pickup_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+                 {% else %} 1=1
+                 {% endif %}
+               {% else %} 1=1
+               {% endif %} ;;
+  }
+  join: operations_agg_dls_dock_efficiency_mtrc {
+    view_label: "Dock Operations"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${operations_agg_dls_dock_efficiency_mtrc.adj_summary_dt_date} = ${master_date_sic_table.CLDR_DT}
+      and  ${operations_agg_dls_dock_efficiency_mtrc.sic_cd} = ${loc_operations_hierarchy_flatten.lvl3_sic_cd}
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${operations_agg_dls_dock_efficiency_mtrc.adj_summary_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${operations_agg_dls_dock_efficiency_mtrc.adj_summary_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${operations_agg_dls_dock_efficiency_mtrc.adj_summary_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${operations_agg_dls_dock_efficiency_mtrc.adj_summary_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${operations_agg_dls_dock_efficiency_mtrc.adj_summary_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${operations_agg_dls_dock_efficiency_mtrc.adj_summary_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: navigation {
+    view_label: "Navigation"
+    type: cross
+    relationship: many_to_one
+  }
+
+  join: fin_agg_dl_finance_report_rds {
+    view_label: "Revenue - Finance"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${fin_agg_dl_finance_report_rds.us_fin_rptg_pickup_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${fin_agg_dl_finance_report_rds.orig_trmnl_sic_cd}
+      and ${fin_agg_dl_finance_report_rds.us_fin_rptg_pickup_date} <> current_date()
+      and
+  {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+  {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+  ${fin_agg_dl_finance_report_rds.us_fin_rptg_pickup_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+  ${fin_agg_dl_finance_report_rds.us_fin_rptg_pickup_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+  ${fin_agg_dl_finance_report_rds.us_fin_rptg_pickup_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+  ${fin_agg_dl_finance_report_rds.us_fin_rptg_pickup_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+  ${fin_agg_dl_finance_report_rds.us_fin_rptg_pickup_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+  ${fin_agg_dl_finance_report_rds.us_fin_rptg_pickup_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+  {% else %} 1=1
+  {% endif %}
+  {% else %} 1=1
+  {% endif %} ;;
+  }
+  join: fin_agg_dl_finance_shipments {
+    view_label: "Others - Finance"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${fin_agg_dl_finance_shipments.us_fin_rptg_date_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${fin_agg_dl_finance_shipments.lvl5_sic_cd}
+      and ${fin_agg_dl_finance_shipments.us_fin_rptg_date_date} <> current_date()
+      and
+  {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+  {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+  ${fin_agg_dl_finance_shipments.us_fin_rptg_date_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+  ${fin_agg_dl_finance_shipments.us_fin_rptg_date_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+  ${fin_agg_dl_finance_shipments.us_fin_rptg_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+  ${fin_agg_dl_finance_shipments.us_fin_rptg_date_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+  ${fin_agg_dl_finance_shipments.us_fin_rptg_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+  ${fin_agg_dl_finance_shipments.us_fin_rptg_date_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+  {% else %} 1=1
+  {% endif %}
+  {% else %} 1=1
+  {% endif %} ;;
+  }
+
+  join: wni_agg_dl_rev {
+    view_label: "WNI"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${wni_agg_dl_rev.wni_rptg_date_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${wni_agg_dl_rev.insp_sic_cd}
+      and ${wni_agg_dl_rev.wni_rptg_date_date} <> current_date()
+      and
+            {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+              {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+                ${wni_agg_dl_rev.wni_rptg_date_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+                ${wni_agg_dl_rev.wni_rptg_date_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+                ${wni_agg_dl_rev.wni_rptg_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+                ${wni_agg_dl_rev.wni_rptg_date_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+                ${wni_agg_dl_rev.wni_rptg_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+              {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+                ${wni_agg_dl_rev.wni_rptg_date_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+              {% else %} 1=1
+              {% endif %}
+            {% else %} 1=1
+            {% endif %} ;;
+  }
+  join: wni_agg_dl_insp_goal {
+    from: wni_agg_dl_goal
+    view_label: "WNI"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${wni_agg_dl_insp_goal.calendar_date_date}
+      and ${master_date_sic_table.lvl5_sic_cd} = ${wni_agg_dl_insp_goal.goal_sic_cd}
+      and ${wni_agg_dl_insp_goal.calendar_date_date} <> current_date()
+      and
+      {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+      {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+      ${wni_agg_dl_insp_goal.calendar_date_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+      ${wni_agg_dl_insp_goal.calendar_date_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+      ${wni_agg_dl_insp_goal.calendar_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+      ${wni_agg_dl_insp_goal.calendar_date_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+      ${wni_agg_dl_insp_goal.calendar_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+      ${wni_agg_dl_insp_goal.calendar_date_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+      {% else %} 1=1
+      {% endif %}
+      {% else %} 1=1
+      {% endif %} ;;
+  }
+  join: wni_agg_dl_rwgh_goal {
+    from: wni_agg_dl_goal
+    view_label: "WNI"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${wni_agg_dl_rwgh_goal.calendar_date_date}
+      and  ${master_date_sic_table.lvl5_sic_cd} = ${wni_agg_dl_rwgh_goal.goal_sic_cd}
+      and ${wni_agg_dl_rwgh_goal.calendar_date_date} <> current_date()
+      and
+      {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+      {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+      ${wni_agg_dl_rwgh_goal.calendar_date_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+      ${wni_agg_dl_rwgh_goal.calendar_date_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+      ${wni_agg_dl_rwgh_goal.calendar_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+      ${wni_agg_dl_rwgh_goal.calendar_date_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+      ${wni_agg_dl_rwgh_goal.calendar_date_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+      {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+      ${wni_agg_dl_rwgh_goal.calendar_date_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+      {% else %} 1=1
+      {% endif %}
+      {% else %} 1=1
+      {% endif %} ;;
+  }
+  join: operations_agg_dl_mnt_cost_mtrc  {
+    view_label: "Maintenance Labor Cost"
+    relationship: one_to_many
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_agg_dl_mnt_cost_mtrc.aply_dt_date}
+      and ${loc_operations_hierarchy_flatten.lvl1_cd} = ${operations_agg_dl_mnt_cost_mtrc.lvl1_cd}
+      and ${operations_agg_dl_mnt_cost_mtrc.aply_dt_date} <> current_date()
+      and
+  {% if pre_computed_calendar.cldr_date_range_paramater._is_filtered %}
+  {% if pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_rev_dt'" %}
+  ${operations_agg_dl_mnt_cost_mtrc.aply_dt_date} = ${operations_lst_rev_day.operations_lst_rev_date}
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_wk'" %}
+  ${operations_agg_dl_mnt_cost_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), week),interval 1 week)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mtd'" %}
+  ${operations_agg_dl_mnt_cost_mtrc.aply_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, month)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'mo_lst_mth'" %}
+  ${operations_agg_dl_mnt_cost_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), month),interval 1 month)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'ytd'" %}
+  ${operations_agg_dl_mnt_cost_mtrc.aply_dt_date} >= date_trunc(${operations_lst_rev_day.operations_lst_rev_date}, year)
+  {% elsif pre_computed_calendar.cldr_date_range_paramater._parameter_value == "'lst_2_yr_ytd'" %}
+  ${operations_agg_dl_mnt_cost_mtrc.aply_dt_date} >= date_sub(date_trunc(current_date(), year),interval 1 year)
+  {% else %} 1=1
+  {% endif %}
+  {% else %} 1=1
+  {% endif %} ;;
+  }
+  join: operations_mnt_labor_cost_goal_by_month{
+    relationship: one_to_one
+    type: left_outer
+    sql_on: ${master_date_sic_table.CLDR_DT} = ${operations_mnt_labor_cost_goal_by_month.cldr_dt}
+      and ${operations_mnt_labor_cost_goal_by_month.cldr_dt} <> current_date();;
+  }
+
+}

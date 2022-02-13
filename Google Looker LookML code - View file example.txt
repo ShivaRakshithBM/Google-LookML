@@ -1,0 +1,3111 @@
+include: "/global_bi_folder/Views/pre_computed_accessorial.view"
+include: "/global_bi_folder/Views/pre_computed_calendar.view"
+include: "/global_bi_folder/Views/pre_computed_commodity.view"
+include: "/global_bi_folder/Views/pre_computed_perspective_shipment.view"
+include: "/global_bi_folder/Views/pre_computed_pricing_agreement.view"
+include: "/global_bi_folder/Views/pra_ac_svc_rds.view"
+include: "/global_bi_folder/Views/pra_rule_set.view"
+include: "/global_bi_folder/Views/prc_proposal_hdr_rds.view"
+include: "/global_bi_folder/Views/rfp_event_log_rds.view"
+include: "/global_bi_folder/Views/rfp_prc_comment_rds.view"
+include: "/global_bi_folder/Views/sam_sales_hierarchy.view"
+include: "/global_bi_folder/Views/service_area_postal_codes_vw.view"
+include: "/global_bi_folder/Views/shipment_history.view"
+include: "/global_bi_folder/Views/shm_svc_ovrd_rds_vw.view"
+include: "/global_bi_folder/Views/sic_master_ref.view"
+include: "/global_bi_folder/Views/shm_mvmt_event_vw.view.lkml"
+include: "/global_bi_folder/Views/claimant_information.view.lkml"
+
+
+view: pre_computed_shipment {
+
+  extends: [pre_computed_perspective_shipment]
+
+  sql_table_name: `@{bq_prd_project}.LOOKER_TEMPORARY_LAYER.pre_computed_SHIPMENT` ;;
+
+#  Ordering the Dimension/Measures
+
+  dimension: pk_perspective_shipment {
+    primary_key: no
+    hidden: yes
+  }
+
+  dimension: shpmt_instc_id {
+    label: "Shipment Instance ID"
+    description: "System generated unique identifier of a shipment (as per CBD standard) (primary key)."
+    primary_key: yes
+    hidden: no
+  }
+
+  dimension: aggregate_key {
+    label: "aggregate_key"
+    description: "The is used to aggregate at the shipment instance ID for distinct counting/summing."
+    sql:${TABLE}.SHPMT_INSTC_ID ;;
+  }
+
+  dimension: cldr_dt {
+    label: "Calendar"
+    group_label: "Perspective"
+    description: "This is calendar date."
+    # hidden: yes
+  }
+
+  dimension: sic {
+    hidden: yes
+  }
+
+  dimension: cust_nbr {
+    hidden: yes
+  }
+
+  dimension: cust_name {
+    hidden: yes
+  }
+
+  dimension: cust_type{
+    hidden: yes
+  }
+
+  dimension: cust_debtor_flag {
+   hidden: yes
+  }
+
+  dimension: perspective {
+    hidden: yes
+  }
+
+  measure: shipment_count_percent_of_total {
+    label: "Shipment Count % of Total"
+    description: "Calculates the percent of shipment count over the total shipment count."
+    type: percent_of_total
+    value_format: "0.0\%"
+    sql: ${count_shipment} ;;
+  }
+
+  measure: sum_weight_percent_of_total {
+    label: "Weight % of Total"
+    description: "Calculates the percent of shipment weight over the total shipment weight."
+    type: percent_of_total
+    value_format: "0.0\%"
+    sql: ${sum_weight} ;;
+  }
+
+  measure: sum_net_revenue_less_obi_percent_of_total {
+    label: "Net Revenue Less OBI % of Total"
+    description: "Calculates the percent of shipment net revenue less obi over the total shipment net revenue less obi."
+    type: percent_of_total
+    value_format: "0.0\%"
+    sql: ${sum_net_revenue_less_obi} ;;
+  }
+
+############################################################################################################################
+# Time Periods:
+#     YTD - pre_computed_calendar.ind_ytd = 0
+#     YTD Last Year - pre_computed_calendar.ind_ytd = -1
+#     YTD Cost Model Months  - pre_computed_calendar.ind_lcmytd = 0
+#     YTD Cost Model Months Last Year  - pre_computed_calendar.ind_lcmytd = -1
+#     MTD - pre_computed_calendar.ind_mtd = 0
+#     MTD Last Year - pre_computed_calendar.ind_mtd = -12
+#     MTD 2 Years Ago - pre_computed_calendar.ind_mtd = -24
+#     Last Cost Model Month - pre_computed_calendar.ind_lcm01 = 0
+#     Last Cost Model Month Last Year - pre_computed_calendar.ind_lcm01 = -1
+#     Last Six Cost Model Months - pre_computed_calendar.ind_lcm06 = 0
+#     Last 12 Cost Model Months - pre_computed_calendar.ind_lcm12 = 0
+#     Last 12 Cost Model Months Last Year - pre_computed_calendar.ind_lcm12 = -1
+#
+# Time Periods to Build:
+#     Last US Financial Reporting Date
+#     MTD
+#     MTD Last Month
+#     MTD Last Year
+#     MTD Last 2 Year
+#     Last Month
+#     Last Month Last Year
+#     Last 3 Months
+#     QTD
+#     QTD Last Year
+#     Last Quarter
+#     Last Prior Quarter
+#     Last Quarter Last Year
+#
+# Order of the Measures:
+#     Shipment Count
+#     Shipment Count per Revenue Day
+#     Change in Shipment Count (Total and Per Revenue Day) - Revenue and Percent
+#     Weight
+#     Weight per Shipment
+#     Hundred Weight
+#     Net Revenue Less OBI
+#     Net Revenue Less OBI (for costed months only)
+#     Net Revenue Less OBI Less FSC
+#     Accessorial Revenue
+#     Accessorial Non-FSC Revenue
+#     Accessorial Revenue FSC
+#     Accessorial Revenue FSC per Revenue Day
+#     Yield Less OBI
+#     Yield Less OBI Less FSC
+#     Profit
+#     Operating Ratio % (OR%) and Net Revenue Less OBI with Cost
+#     Total Cost
+#     Total Direct Cost
+############################################################################################################################
+
+############################################################################################################################
+# Measure: Shipment Count
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago, Last Revenue Date
+############################################################################################################################
+
+# YTD
+  measure: count_shipment_ytd {
+    label: "Shipment Count YTD"
+    group_label: "Shipment Count"
+    group_item_label: "YTD"
+    description: "Total count of shipments year-to-date (YTD)."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: count_shipment_ytd_last_year {
+    label: "Shipment Count YTD Last Year"
+    group_label: "Shipment Count"
+    group_item_label: "YTD Last Year"
+    description: "Total count of shipments year-to-date (YTD) last year."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# MTD
+  measure: count_shipment_mtd {
+    label: "Shipment Count MTD"
+    group_label: "Shipment Count"
+    group_item_label: "MTD"
+    description: "Total count of shipments month-to-date (MTD)."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+# MTD Last Month
+  measure: count_shipment_mtd_last_month {
+    label: "Shipment Count MTD Last Month"
+    group_label: "Shipment Count"
+    group_item_label: "MTD Last Month"
+    description: "Total count of shipments month-to-date (MTD) last month."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_mtd: "-1"]
+  }
+
+# MTD Last Year
+  measure: count_shipment_mtd_last_year {
+    label: "Shipment Count MTD Last Year"
+    group_label: "Shipment Count"
+    group_item_label: "MTD Last Year"
+    description: "Total count of shipments month-to-date (MTD) last year."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+# MTD 2 Years Ago
+  measure: count_shipment_mtd_2_years_ago {
+    label: "Shipment Count MTD 2 Years Ago"
+    group_label: "Shipment Count"
+    group_item_label: "MTD 2 Years Ago"
+    description: "Total count of shipments month-to-date (MTD) 2 years ago."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_mtd: "-24"]
+  }
+
+# Last Revenue Date
+  measure: count_shipment_lst_rev_dt {
+    label: "Shipment Count Last Revenue Date"
+    group_label: "Shipment Count"
+    group_item_label: "Last Revenue Date"
+    description: "Total count of shipments last revenue date."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.is_lst_rev_date: "Yes"]
+  }
+
+# Last Month
+  measure: count_shipment_last_month {
+    label: "Shipment Count Last Month"
+    group_label: "Shipment Count"
+    group_item_label: "Last Month"
+    description: "Total count of shipments Last Month."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_mo: "-1"]
+  }
+
+# Last Month Last Year
+  measure: count_shipment_last_month_last_year {
+    label: "Shipment Count Last Month Last Year"
+    group_label: "Shipment Count"
+    group_item_label: "Last Month Last Year"
+    description: "Total count of shipments Last Month last year."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_mo: "-13"]
+  }
+
+# Current Year YTD
+
+  measure: count_shipment_current_year_ytd {
+    label: "Shipment Count Current Year YTD"
+    group_label: "Shipment Count"
+    group_item_label: "Current Year YTD"
+    description: "Total count of shipments current year YTD."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# Last Year YTD
+
+  measure: count_shipment_last_year_ytd {
+    label: "Shipment Count Last Year YTD"
+    group_label: "Shipment Count"
+    group_item_label: "Last Year YTD"
+    description: "Total count of shipments last year YTD."
+    type: count
+    value_format_name: decimal_0
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+############################################################################################################################
+# Measure: Shipment Count per Revenue Day
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago
+############################################################################################################################
+# YTD
+  measure: count_shipment_day_ytd {
+    label: "Shipment Count YTD per Day"
+    group_label: "Shipment Count per Day"
+    group_item_label: "YTD per Day"
+    description: "Total count of shipments year-to-date (YTD) per revenue day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${count_shipment_ytd},${pre_computed_calendar.sum_rev_day_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: count_shipment_day_ytd_last_year {
+    label: "Shipment Count YTD Last Year per Day"
+    group_label: "Shipment Count per Day"
+    group_item_label: "YTD Last Year per Day"
+    description: "Total count of shipments year-to-date (YTD) last year per revenue day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${count_shipment_ytd_last_year},${pre_computed_calendar.sum_rev_day_ytd_last_year}) ;;
+  }
+
+# MTD
+  measure: count_shipment_perday_mtd {
+    label: "Shipment Count MTD per Day"
+    group_label: "Shipment Count per Day"
+    group_item_label: "MTD per Day"
+    description: "Total count of shipments month-to-date (MTD) per revenue day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${count_shipment_mtd}, ${pre_computed_calendar.sum_rev_day_mtd}) ;;
+  }
+
+# MTD Last Year
+  measure: count_shipment_perday_mtd_last_year {
+    label: "Shipment Count MTD Last Year per Day"
+    group_label: "Shipment Count per Day"
+    group_item_label: "MTD Last Year per Day"
+    description: "Total count of shipments month-to-date (MTD) last year per revenue day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${count_shipment_mtd_last_year}, ${pre_computed_calendar.sum_rev_day_mtd_month12_ago}) ;;
+  }
+
+# MTD 2 Years Ago
+  measure: count_shipment_perday_mtd_2_years_ago {
+    label: "Shipment Count MTD 2 Years Ago per Day"
+    group_label: "Shipment Count per Day"
+    group_item_label: "MTD 2 Years Ago per Day"
+    description: "Total count of shipments month-to-date (MTD) 2 years ago per revenue day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${count_shipment_mtd_2_years_ago}, ${pre_computed_calendar.sum_rev_day_mtd_month24_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Shipment - Total Count; Revenue and Percent
+# Time Periods: YTD vs YTD Last Year, MTD vs MTD Last Year, MTD vs MTD 2 Years Ago
+############################################################################################################################
+# YTD YOY Change Amount
+  measure: change_amt_count_shipment_ytd_yoy {
+    label: "Shipment Count Change YTD YOY"
+    group_label: "Shipment Count"
+    group_item_label: "Change YTD YOY"
+    description: "Difference in shipment count year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${count_shipment_ytd} - ${count_shipment_ytd_last_year} ;;
+  }
+
+# YTD YOY Change Percent
+  measure: change_pct_count_shipment_ytd_yoy {
+    label: "Shipment Count Change % YTD YOY"
+    group_label: "Shipment Count"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in shipment count year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${count_shipment_ytd} - ${count_shipment_ytd_last_year}, ${count_shipment_ytd_last_year}) ;;
+  }
+
+# MTD YOY Change Amount
+  measure: change_amt_count_shipment_mtd_yoy {
+    label: "Shipment Count Change MTD YOY"
+    group_label: "Shipment Count"
+    group_item_label: "Change MTD YOY"
+    description: "Difference in shipment count month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${count_shipment_mtd} - ${count_shipment_mtd_last_year} ;;
+  }
+
+# MTD YOY Change Percent
+  measure: change_pct_count_shipment_mtd_yoy {
+    label: "Shipment Count Change % MTD YOY"
+    group_label: "Shipment Count"
+    group_item_label: "Change % MTD YOY"
+    description: "Percent Change in shipment count month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${count_shipment_mtd} - ${count_shipment_mtd_last_year}, ${count_shipment_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago YOY Change Amount
+  measure: change_amt_count_shipment_mtd_2_years_ago_yoy {
+    label: "Shipment Count Change MTD vs 2 Years Ago"
+    group_label: "Shipment Count"
+    group_item_label: "Change MTD vs 2 Years Ago"
+    description: "Difference in shipment count month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${count_shipment_mtd} - ${count_shipment_mtd_2_years_ago} ;;
+  }
+
+# MTD 2 Years Ago YOY Change Percent
+  measure: change_pct_count_shipment_mtd_2_years_ago_yoy {
+    label: "Shipment Count Change % MTD vs 2 Years Ago"
+    group_label: "Shipment Count"
+    group_item_label: "Change % MTD vs 2 Years Ago"
+    description: "Percent Change in shipment count month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${count_shipment_mtd} - ${count_shipment_mtd_2_years_ago}, ${count_shipment_mtd_2_years_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Shipment - Per Revenue Day; Revenue and Percent
+# Time Periods: YTD vs YTD Last Year, MTD vs MTD Last Year, MTD vs MTD 2 Years Ago
+# Modified 5/6/2020 
+############################################################################################################################
+# YTD YOY Per Day Change Amount
+  measure: change_amt_count_shipment_day_ytd_yoy {
+    label: "Shipment Count per Day Change YTD YOY"
+    group_label: "Shipment Count per Day"
+    group_item_label: "Change YTD YOY"
+    description: "Difference in shipment count per revenue day year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${count_shipment_day_ytd} - ${count_shipment_day_ytd_last_year} ;;
+  }
+
+# YTD YOY Per Day Change Percent
+  measure: change_pct_count_shipment_day_ytd_yoy {
+    label: "Shipment Count per Day Change % YTD YOY"
+    group_label: "Shipment Count per Day"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in shipment count per revenue day year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${count_shipment_day_ytd} - ${count_shipment_day_ytd_last_year}, ${count_shipment_day_ytd_last_year}) ;;
+  }
+
+# MTD YOY Per Day Change Amount
+  measure: change_amt_count_shipment_perday_mtd_yoy {
+    label: "Shipment Count per Day Change MTD YOY"
+    group_label: "Shipment Count per Day"
+    group_item_label: "Change MTD YOY"
+    description: "Difference in shipment count per revenue day month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${count_shipment_perday_mtd} - ${count_shipment_perday_mtd_last_year} ;;
+  }
+
+# MTD YOY Per Day Change Percent
+  measure: change_pct_count_shipment_perday_mtd_yoy {
+    label: "Shipment Count per Day Change % MTD YOY"
+    group_label: "Shipment Count per Day"
+    group_item_label: "Change % MTD YOY"
+    description: "Percent Change in shipment count per revenue day month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${count_shipment_perday_mtd} - ${count_shipment_perday_mtd_last_year}, ${count_shipment_perday_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago YOY Change Amount
+  measure: change_amt_count_shipment_perday_mtd_2_years_ago_yoy {
+    label: "Shipment Count per Day Change MTD vs 2 Years Ago"
+    group_label: "Shipment Count per Day"
+    group_item_label: "Change MTD vs 2 Years Ago"
+    description: "Difference in shipment count per revenue day month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${count_shipment_perday_mtd} - ${count_shipment_perday_mtd_2_years_ago} ;;
+  }
+
+# MTD 2 Years Ago YOY Change Percent
+  measure: change_pct_count_shipment_perday_mtd_2_years_ago_yoy {
+    label: "Shipment Count per Day Change % MTD vs 2 Years Ago"
+    group_label: "Shipment Count per Day"
+    group_item_label: "Change % vs 2 Years Ago"
+    description: "Percent Change in shipment count per revenue day month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${count_shipment_perday_mtd} - ${count_shipment_perday_mtd_2_years_ago}, ${count_shipment_perday_mtd_2_years_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Total Weight
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago, Last Revenue Date
+# Modified 5/6/2020 by Shiva & Pedro
+############################################################################################################################
+# YTD
+  measure: sum_weight_ytd {
+    label: "Shipment Weight YTD"
+    group_label: "Weight"
+    group_item_label: "YTD"
+    description: "Total shipment weight year-to-date (YTD)."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_weight_ytd_last_year {
+    label: "Shipment Weight YTD Last Year"
+    group_label: "Weight"
+    group_item_label: "YTD Last Year"
+    description: "Total shipment weight year-to-date last year."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# MTD
+  measure: sum_weight_mtd {
+    label: "Shipment Weight MTD"
+    group_label: "Weight"
+    group_item_label: "MTD"
+    description: "Total shipment weight month-to-date (MTD)."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+# MTD Last Month
+  measure: sum_weight_mtd_last_month {
+    label: "Shipment Weight MTD Last Month"
+    group_label: "Weight"
+    group_item_label: "MTD Last Month"
+    description: "Total shipment weight month-to-date last month."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-1"]
+  }
+
+# MTD Last Year
+  measure: sum_weight_mtd_last_year {
+    label: "Shipment Weight MTD Last Year"
+    group_label: "Weight"
+    group_item_label: "MTD Last Year"
+    description: "Total shipment weight month-to-date last year."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+# MTD 2 Years Ago
+  measure: sum_weight_mtd_2_years_ago {
+    label: "Shipment Weight MTD 2 Years Ago"
+    group_label: "Weight"
+    group_item_label: "MTD 2 Years Ago"
+    description: "Total shipment weight month-to-date 2 years ago."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-24"]
+  }
+
+# Last Revenue Date
+  measure: sum_weight_lst_rev_dt {
+    label: "Shipment Weight Last Revenue Date"
+    group_label: "Weight"
+    group_item_label: "Last Revenue Date"
+    description: "Total shipment weight last revenue date."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.is_lst_rev_date: "Yes"]
+  }
+
+# Last Month Current Year
+  measure: sum_weight_last_month {
+    label: "Shipment Weight Last Month"
+    group_label: "Weight"
+    group_item_label: "Last Month"
+    description: "Total shipment weight Last Month Current Year."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.ind_mo: "-1"]
+  }
+
+# Last Month Last Year
+  measure: sum_weight_last_month_last_year {
+    label: "Shipment Weight Last Month Last Year"
+    group_label: "Weight"
+    group_item_label: "Last Month Last Year"
+    description: "Total shipment weight Last Month last year."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${weight} ;;
+    filters: [pre_computed_calendar.ind_mo: "-13"]
+  }
+
+############################################################################################################################
+# Measure: Weight per Revenue Day
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago
+# Modified 5/6/2020 
+############################################################################################################################
+# YTD
+  measure: sum_weight_day_ytd {
+    label: "Weight YTD per Day"
+    group_label: "Weight per Day"
+    group_item_label: "YTD per Day"
+    description: "Total shipment weight in pounds year-to-date (YTD) per Revenue Day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_ytd},${pre_computed_calendar.sum_rev_day_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: sum_weight_day_ytd_last_year {
+    label: "Weight YTD Last Year per Day"
+    group_label: "Weight per Day"
+    group_item_label: "YTD Last Year per Day"
+    description: "Total shipment weight in pounds year-to-date (YTD) last year per Revenue Day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_ytd_last_year},${pre_computed_calendar.sum_rev_day_ytd_last_year}) ;;
+  }
+
+# MTD
+  measure: sum_weight_perday_mtd {
+    label: "Weight MTD per Day"
+    group_label: "Weight per Day"
+    group_item_label: "MTD per Day"
+    description: "Total shipment weight in pounds month-to-date (MTD) per Revenue Day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_mtd}, ${pre_computed_calendar.sum_rev_day_mtd}) ;;
+  }
+
+# MTD Last Year
+  measure: sum_weight_perday_mtd_last_year {
+    label: "Weight MTD Last Year per Day"
+    group_label: "Weight per Day"
+    group_item_label: "MTD Last Year per Day"
+    description: "Total shipment weight in pounds month-to-date (MTD) last year per Revenue Day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_mtd_last_year}, ${pre_computed_calendar.sum_rev_day_mtd_month12_ago}) ;;
+  }
+
+# MTD 2 Years Ago
+  measure: sum_weight_perday_mtd_2_years_ago {
+    label: "Weight MTD 2 Years Ago per Day"
+    group_label: "Weight per Day"
+    group_item_label: "MTD 2 Years Ago per Day"
+    description: "Total shipment weight in pounds month-to-date (MTD) 2 years ago per Revenue Day."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_mtd_2_years_ago}, ${pre_computed_calendar.sum_rev_day_mtd_month24_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Weight - Total; Amount and Percent
+# Time Periods: YTD vs YTD Last Year, MTD vs MTD Last Year, MTD vs MTD 2 Years Ago
+# Modified 4/28/2020 
+############################################################################################################################
+# YTD YOY Change Amount
+  measure: change_amt_sum_weight_ytd_yoy {
+    label: "Weight Change YTD YOY"
+    group_label: "Weight"
+    group_item_label: "Change YTD YOY"
+    description: "Change in weight year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_weight_ytd} - ${sum_weight_ytd_last_year} ;;
+  }
+
+# YTD YOY Change Percent
+  measure: change_pct_sum_weight_ytd_yoy {
+    label: "Weight Change % YTD YOY"
+    group_label: "Weight"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in weight year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_weight_ytd} - ${sum_weight_ytd_last_year}, ${sum_weight_ytd_last_year}) ;;
+  }
+
+# MTD YOY Change Amount
+  measure: change_amt_sum_weight_mtd_yoy {
+    label: "Weight Change MTD YOY"
+    group_label: "Weight"
+    group_item_label: "Change MTD YOY"
+    description: "Change in weight month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_weight_mtd} - ${sum_weight_mtd_last_year} ;;
+  }
+
+# MTD YOY Change Percent
+  measure: change_pct_sum_weight_mtd_yoy {
+    label: "Weight Change % MTD YOY"
+    group_label: "Weight"
+    group_item_label: "Change % MTD YOY"
+    description: "Percent Change in weight month to date (MTD) vs month to date (MTD) 1 year ago"
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_weight_mtd} - ${sum_weight_mtd_last_year}, ${sum_weight_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago YOY Change Amount
+  measure: change_amt_sum_weight_mtd_2_years_ago_yoy {
+    label: "Weight Change MTD vs 2 Years Ago"
+    group_label: "Weight"
+    group_item_label: "Change MTD vs 2 Years Ago"
+    description: "Change in weight month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_weight_mtd} - ${sum_weight_mtd_2_years_ago} ;;
+  }
+
+# MTD 2 Years Ago YOY Change Percent
+  measure: change_pct_sum_weight_mtd_2_years_ago_yoy {
+    label: "Weight Change % MTD vs 2 Years Ago"
+    group_label: "Weight"
+    group_item_label: "Change % MTD vs 2 Years Ago"
+    description: "Percent Change in weight month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_mtd} - ${sum_weight_mtd_2_years_ago}, ${sum_weight_mtd_2_years_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Weight - Per Revenue Day; Amount and Percent
+# Time Periods: YTD vs YTD Last Year, MTD vs MTD Last Year, MTD vs MTD 2 Years Ago
+# Modified 5/6/2020 
+############################################################################################################################
+# YTD YOY Per Day Change Amount
+  measure: change_amt_sum_weight_day_ytd_yoy {
+    label: "Weight per Day Change YTD YOY"
+    group_label: "Weight per Day"
+    group_item_label: "Change YTD YOY"
+    description: "Change in weight per revenue day year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_weight_day_ytd} - ${sum_weight_day_ytd_last_year} ;;
+  }
+
+# YTD YOY Per Day Change Percent
+  measure: change_pct_sum_weight_day_ytd_yoy {
+    label: "Weight per Day Change % YTD YOY"
+    group_label: "Weight per Day"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in weight per revenue day year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_weight_day_ytd} - ${sum_weight_day_ytd_last_year}, ${sum_weight_day_ytd_last_year}) ;;
+  }
+
+# MTD YOY Change Amount
+  measure: change_amt_sum_weight_perday_mtd_yoy {
+    label: "Weight per Day Change MTD YOY"
+    group_label: "Weight per Day"
+    group_item_label: "Change MTD YOY"
+    description: "Change in weight per revenue day month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_weight_perday_mtd} - ${sum_weight_perday_mtd_last_year} ;;
+  }
+
+# MTD YOY Change Percent
+  measure: change_pct_sum_weight_perday_mtd_yoy {
+    label: "Weight per Day Change % MTD YOY"
+    group_label: "Weight per Day"
+    group_item_label: "Change % MTD YOY"
+    description: "Percent Change in weight per revenue day month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_weight_perday_mtd} - ${sum_weight_perday_mtd_last_year}, ${sum_weight_perday_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago YOY Change Amount
+  measure: change_amt_sum_weight_perday_mtd_2_years_ago_yoy {
+    label: "Weight per Day Change MTD vs 2 Years Ago"
+    group_label: "Weight per Day"
+    group_item_label: "Change MTD vs 2 Years Ago"
+    description: "Change in weight per revenue day month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_weight_perday_mtd} - ${sum_weight_perday_mtd_2_years_ago} ;;
+  }
+
+# MTD 2 Years Ago YOY Change Percent
+  measure: change_pct_sum_weight_perday_mtd_2_years_ago_yoy {
+    label: "Percent Change in Weight per Day MTD vs 2 Years Ago"
+    group_label: "Weight per Day"
+    group_item_label: "Change % MTD vs 2 Years Ago"
+    description: "Percent Change in weight per revenue day month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_weight_perday_mtd} - ${sum_weight_perday_mtd_2_years_ago}, ${sum_weight_perday_mtd_2_years_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Weight per Shipment
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago, Last Revenue Date
+# Modified 5/6/2020 
+############################################################################################################################
+# YTD
+  measure: avg_weight_ytd {
+    label: "Weight Per Shipment YTD"
+    group_label: "Weight per Shipment"
+    group_item_label: "YTD"
+    description: "Total weight divided by the total shipment count year to date (YTD)."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_ytd}, ${count_shipment_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: avg_weight_ytd_last_year {
+    label: "Weight Per Shipment YTD Last Year"
+    group_label: "Weight per Shipment"
+    group_item_label: "YTD Last Year"
+    description: "Total weight divided by the total shipment count year to date (YTD) last year."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_ytd_last_year}, ${count_shipment_ytd_last_year}) ;;
+  }
+
+# MTD
+  measure: avg_weight_mtd {
+    label: "Weight Per Shipment MTD"
+    group_label: "Weight per Shipment"
+    group_item_label: "MTD"
+    description: "Total weight divided by the total shipment count month-to-date (MTD)."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_mtd}, ${count_shipment_mtd}) ;;
+  }
+
+# MTD Last Year
+  measure: avg_weight_mtd_last_year {
+    label: "Weight Per Shipment MTD Last Year"
+    group_label: "Weight per Shipment"
+    group_item_label: "MTD Last Year"
+    description: "Total weight divided by the total shipment count month-to-date (MTD) last year."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_mtd_last_year}, ${count_shipment_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago
+  measure: avg_weight_mtd_2_years_ago {
+    label: "Weight Per Shipment MTD 2 Years Ago"
+    group_label: "Weight per Shipment"
+    group_item_label: "MTD 2 Years Ago"
+    description: "Total weight divided by the total shipment count month-to-date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_mtd_2_years_ago}, ${count_shipment_mtd_2_years_ago}) ;;
+  }
+
+# Last Revenue Date
+  measure: avg_weight_lst_rev_dt {
+    label: "Weight Per Shipment Last Revenue Date"
+    group_label: "Weight per Shipment"
+    group_item_label: "Last Revenue Date"
+    description: "Total weight divided by the total shipment count last revenue date."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_lst_rev_dt}, ${count_shipment_lst_rev_dt}) ;;
+  }
+
+# Last Month
+  measure: avg_weight_last_month {
+    label: "Weight Per Shipment Last Month"
+    group_label: "Weight per Shipment"
+    group_item_label: "Last Month"
+    description: "Total weight divided by the total shipment count last month."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_last_month}, ${count_shipment_last_month}) ;;
+  }
+
+# Last Month Last Year
+  measure: avg_weight_last_month_last_year {
+    label: "Weight Per Shipment Last Month Last Year"
+    group_label: "Weight per Shipment"
+    group_item_label: "Last Month Last Year"
+    description: "Total weight divided by the total shipment count last month last year."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_weight_last_month_last_year}, ${count_shipment_last_month_last_year}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Weight per Shipment; Revenue and Percent
+# Time Periods: YTD vs YTD Last Year, MTD vs MTD Last Year, MTD vs MTD 2 Years Ago
+# Modified 5/6/2020 
+############################################################################################################################
+# YTD YOY Change Amount
+  measure: change_amt_avg_weight_ytd_yoy {
+    label: "Weight per Shipment Change YTD YOY"
+    group_label: "Weight per Shipment"
+    group_item_label: "Change YTD YOY"
+    description: "Change in weight per shipment year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${avg_weight_ytd} - ${avg_weight_ytd_last_year} ;;
+  }
+
+# YTD YOY Change Percent
+  measure: change_pct_avg_weight_ytd_yoy {
+    label: "Weight per Shipment Change % YTD YOY"
+    group_label: "Weight per Shipment"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in weight per shipment year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${avg_weight_ytd} - ${avg_weight_ytd_last_year}, ${avg_weight_ytd_last_year}) ;;
+  }
+
+# MTD YOY Change Amount
+  measure: change_amt_avg_weight_mtd_yoy {
+    label: "Weight per Shipment Change MTD YOY"
+    group_label: "Weight per Shipment"
+    group_item_label: "Change MTD YOY"
+    description: "Change in weight per shipment month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${avg_weight_mtd} - ${avg_weight_mtd_last_year} ;;
+  }
+
+# MTD YOY Change Percent
+  measure: change_pct_avg_weight_mtd_yoy {
+    label: "Weight per Shipment Change % MTD YOY"
+    group_label: "Weight per Shipment"
+    group_item_label: "Change % MTD YOY"
+    description: "Percent Change in weight per shipment month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${avg_weight_mtd} - ${avg_weight_mtd_last_year}, ${avg_weight_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago YOY Change Amount
+  measure: change_amt_avg_weight_mtd_2_years_ago_yoy {
+    label: "Weight per Shipment Change MTD vs 2 Years Ago"
+    group_label: "Weight per Shipment"
+    group_item_label: "Change MTD vs 2 Years Ago"
+    description: "Change in weight per shipment month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: decimal_0
+    sql: ${avg_weight_mtd} - ${avg_weight_mtd_2_years_ago} ;;
+  }
+
+# MTD 2 Years Ago YOY Change Percent
+  measure: change_pct_avg_weight_mtd_2_years_ago_yoy {
+    label: "Weight per Shipment Change % MTD vs 2 Years Ago"
+    group_label: "Weight per Shipment"
+    group_item_label: "Change % MTD vs 2 Years Ago"
+    description: "Percent Change in weight per shipment month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${avg_weight_mtd} - ${avg_weight_mtd_2_years_ago}, ${avg_weight_mtd_2_years_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Hundred Weight (CWT)
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago, Last Revenue Date
+# Modified 5/1/2020 by Shiva & Pedro
+############################################################################################################################
+# YTD
+  measure: sum_cwt_weight_ytd {
+    label: "Weight per Hundred Pounds (CWT) YTD"
+    group_label: "Weight (CWT)"
+    group_item_label: "YTD"
+    description: "Weight of the shipment divided by 100 (CWT) for the current year-to-date (YTD)."
+    type: sum
+    value_format_name: decimal_2
+    sql: ${cwt_weight} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_cwt_weight_ytd_last_year {
+    label: "Weight per Hundred Pounds (CWT) YTD Last Year"
+    group_label: "Weight (CWT)"
+    group_item_label: "YTD Last Year"
+    description: "Weight of the shipment divided by 100 (CWT) for the year-to-date (YTD) last year."
+    type: sum
+    value_format_name: decimal_2
+    sql: ${cwt_weight} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# MTD
+  measure: sum_cwt_weight_mtd {
+    label: "Weight per Hundred Pounds (CWT) MTD"
+    group_label: "Weight (CWT)"
+    group_item_label: "MTD"
+    description: "Weight of the shipment divided by 100 (CWT) for the current month-to-date (MTD)."
+    type: sum
+    value_format_name: decimal_2
+    sql: ${cwt_weight} ;;
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+# MTD Last Year
+  measure: sum_cwt_weight_mtd_last_year {
+    label: "Weight per Hundred Pounds (CWT) MTD Last Year"
+    group_label: "Weight (CWT)"
+    group_item_label: "MTD Last Year"
+    description: "Weight of the shipment divided by 100 (CWT) for the month-to-date (MTD) last year."
+    type: sum
+    value_format_name: decimal_2
+    sql: ${cwt_weight} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+# MTD 2 Years Ago
+  measure: sum_cwt_weight_mtd_2_years_ago {
+    label: "Weight per Hundred Pounds (CWT) MTD 2 Years Ago"
+    group_label: "Weight (CWT)"
+    group_item_label: "MTD 2 Years Ago"
+    description: "Weight of the shipment divided by 100 (CWT) for the month-to-date (MTD) 2 years ago."
+    type: sum
+    value_format_name: decimal_2
+    sql: ${cwt_weight} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-24"]
+  }
+
+# Last Revenue Date
+  measure: sum_cwt_weight_lst_rev_dt {
+    label: "Weight per Hundred Pounds (CWT) Last Revenue Date"
+    group_label: "Weight (CWT)"
+    group_item_label: "Last Revenue Date"
+    description: "Weight of the shipment divided by 100 (CWT) for the last revenue date."
+    type: sum
+    value_format_name: decimal_2
+    sql: ${cwt_weight} ;;
+    filters: [pre_computed_calendar.is_lst_rev_date: "Yes"]
+  }
+
+# Last Month
+  measure: sum_cwt_weight_last_month {
+    label: "Weight per Hundred Pounds (CWT) Last Month"
+    group_label: "Weight (CWT)"
+    group_item_label: "Last Month"
+    description: "Weight of the shipment divided by 100 (CWT) for the last month current year."
+    type: sum
+    value_format_name: decimal_2
+    sql: ${cwt_weight} ;;
+    filters: [pre_computed_calendar.ind_mo: "-1"]
+  }
+
+# Last Month Last Year
+  measure: sum_cwt_weight_last_month_last_year {
+    label: "Weight per Hundred Pounds (CWT) Last Month Last Year"
+    group_label: "Weight (CWT)"
+    group_item_label: "Last Month Last Year"
+    description: "Weight of the shipment divided by 100 (CWT) for the last month last year."
+    type: sum
+    value_format_name: decimal_2
+    sql: ${cwt_weight} ;;
+    filters: [pre_computed_calendar.ind_mo: "-13"]
+  }
+
+############################################################################################################################
+# Measure: Net Revenue
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago, QTD, QTD Last Year, Last Revenue Date
+# Modified 5/8/2020 by Shiva & Pedro
+############################################################################################################################
+# YTD
+  measure: sum_net_revenue_ytd {
+    label: "Net Revenue YTD"
+    group_label: "Net Revenue"
+    group_item_label: "YTD"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+                  (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+                  for the current year to date (YTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_net_revenue_ytd_last_year {
+    label: "Net Revenue YTD Last Year"
+    group_label: "Net Revenue"
+    group_item_label: "YTD Last Year"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+                  (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+                  for the year to date (YTD) 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# MTD
+  measure: sum_net_revenue_mtd {
+    label: "Net Revenue MTD"
+    group_label: "Net Revenue"
+    group_item_label: "MTD"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+                  (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+                  for the current month to date (MTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+# MTD Last Year
+  measure: sum_net_revenue_mtd_last_year {
+    label: "Net Revenue MTD Last Year"
+    group_label: "Net Revenue"
+    group_item_label: "MTD Last Year"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+                  (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+                  for the month to date (MTD) 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+# MTD 2 Years Ago
+  measure: sum_net_revenue_mtd_2_years_ago {
+    label: "Net Revenue MTD 2 Years Ago"
+    group_label: "Net Revenue"
+    group_item_label: "MTD 2 Years Ago"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+                  (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+                  for the month to date (MTD) 2 years ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-24"]
+  }
+
+# QTD
+  measure: sum_net_revenue_qtd {
+    label: "Net Revenue QTD"
+    group_label: "Net Revenue"
+    group_item_label: "QTD"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+    for the current quarter to date (QTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_qtd: "0"]
+  }
+
+# QTD Last Year
+  measure: sum_net_revenue_qtd_last_year {
+    label: "Net Revenue QTD Last Year"
+    group_label: "Net Revenue"
+    group_item_label: "QTD Last Year"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+    for the quarter to date (QTD) 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_qtd: "-4"]
+  }
+
+# Last Revenue Date
+  measure: sum_net_revenue_lst_rev_dt {
+    label: "Net Revenue Last Revenue Date"
+    group_label: "Net Revenue"
+    group_item_label: "Last Revenue Date"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+    for the last revenue date."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.is_lst_rev_date: "Yes"]
+  }
+
+# Last Month
+  measure: sum_net_revenue_last_month {
+    label: "Net Revenue Last Month"
+    group_label: "Net Revenue"
+    group_item_label: "Last Month"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+    for the last month."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_mo : "-1"]
+  }
+
+# Last Month Last Year
+  measure: sum_net_revenue_last_month_last_year {
+    label: "Net Revenue Last Month Last Year"
+    group_label: "Net Revenue"
+    group_item_label: "Last Month Last Year"
+    description: "Total Net Revenue is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount)
+    for the last month 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue} ;;
+    filters: [pre_computed_calendar.ind_mo: "-13"]
+  }
+
+#####################
+# Measure: Net Revenue Less FSC
+# Time Periods: Last Month Current year, Last Month Last Year
+#####################
+
+# Last Month
+  measure: sum_net_revenue_less_fsc_last_month {
+    label: "Net Revenue Less FSC Last Month"
+    group_label: "Net Revenue Less FSC"
+    group_item_label: "Last Month"
+    description: "Total Net Revenue Less FSC is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount) minus Fuel Surcharge
+    for the last month."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_fsc} ;;
+    filters: [pre_computed_calendar.ind_mo : "-1"]
+  }
+
+# Last Month Last Year
+  measure: sum_net_revenue_less_fsc_last_month_last_year {
+    label: "Net Revenue Less FSC Last Month Last Year"
+    group_label: "Net Revenue Less FSC"
+    group_item_label: "Last Month Last Year"
+    description: "It is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount) minus Fuel Surcharge
+    for the last month 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_fsc} ;;
+    filters: [pre_computed_calendar.ind_mo: "-13"]
+  }
+
+# YTD Current Year
+
+  measure: sum_net_revenue_less_fsc_ytd_current_year{
+    label: "Net Revenue Less FSC YTD Current Year"
+    group_label: "Net Revenue Less FSC"
+    group_item_label: "YTD Current Year"
+    description: "Total Net Revenue Less FSC is the Total Charge Amount minus the Non Revenue amount (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount) minus Fuel Surcharge for YTD current year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_fsc} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_net_revenue_less_fsc_ytd_last_year {
+    label: "Net Revenue Less FSC YTD Last Year"
+    group_label: "Net Revenue Less FSC"
+    group_item_label: "YTD Last Year"
+    description: "Total Net Revenue Less FSC is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount) minus Fuel
+    Surcharge for YTD last year."
+    type: sum
+    value_format_name: usd_0
+    sql:  ${net_revenue_less_fsc} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# MTD Current Year
+
+  measure: sum_net_revenue_less_fsc_mtd_current_year{
+    label: "Net Revenue Less FSC MTD Current Year"
+    group_label: "Net Revenue Less FSC"
+    group_item_label: "MTD Current Year"
+    description: "Total Net Revenue Less FSC is the Total Charge Amount minus the Non Revenue amount (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount) minus Fuel Surcharge for MTD current month current year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_fsc} ;;
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+# MTD Last Year
+  measure: sum_net_revenue_less_fsc_mtd_last_year {
+    label: "Net Revenue Less FSC MTD Last Year"
+    group_label: "Net Revenue Less FSC"
+    group_item_label: "MTD Last Year"
+    description: "Total Net Revenue Less FSC is the Total Charge Amount minus the Non Revenue amount
+    (exchange amount, intra Canadian amount, COD amount, and total Mexico non-revenue amount) minus Fuel
+    Surcharge for MTD current month last year."
+    type: sum
+    value_format_name: usd_0
+    sql:  ${net_revenue_less_fsc} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+
+################################################################################################################################
+# Measure: Net Revenue Less OBI
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last year, MTD 2 Years Ago, Last Cost Model Month, Last Cost Model Month Last Year,
+#               Last Revenue Date, Last Six Cost Model Months, Last 12 Cost Model Months, Last 12 Cost Model Months Last Year
+# Modified 5/8/2020 by Shiva & Pedro
+################################################################################################################################
+# YTD
+  measure: sum_net_revenue_less_obi_ytd {
+    label: "Net Revenue Less OBI YTD"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "YTD"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the current year-to-date (YTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_net_revenue_less_obi_ytd_last_year {
+    label: "Net Revenue Less OBI YTD Last Year"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "YTD Last Year"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the year-to-date (YTD) 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# MTD
+  measure: sum_net_revenue_less_obi_mtd {
+    label: "Net Revenue Less OBI MTD"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "MTD"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the current month-to-date (MTD)"
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+  # Last Month Current Year
+  measure: sum_net_revenue_less_obi_last_month {
+    label: "et Revenue Less OBI Last Month"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last Month"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the Last Month Current Year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_mo: "-1"]
+  }
+
+# MTD Last Month
+  measure: sum_net_revenue_less_obi_mtd_last_month {
+    label: "Net Revenue Less OBI MTD Last Month"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "MTD Last Month"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the month-to-date (MTD) 1last month."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-1"]
+  }
+
+# MTD Last Year
+  measure: sum_net_revenue_less_obi_mtd_last_year {
+    label: "Net Revenue Less OBI MTD Last Year"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "MTD Last Year"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the month-to-date (MTD) 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+# MTD 2 Years Ago
+  measure: sum_net_revenue_less_obi_mtd_2_years_ago {
+    label: "Net Revenue Less OBI MTD 2 Years Ago"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "MTD 2 Years Ago"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the month-to-date (MTD) 2 years ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-24"]
+  }
+
+# Last Cost Model Month
+  measure: sum_net_revenue_less_obi_lcm01 {
+    label: "Net Revenue Less OBI Last Cost Model Month"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last Cost Model Month"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the last cost model month."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm01 : "0"]
+  }
+
+# Last Cost Model Month Last Year
+  measure: sum_net_revenue_less_obi_lcm01_last_year {
+    label: "Net Revenue Less OBI Last Cost Model Month Last Year"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last Cost Model Month Last Year"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the last cost model month last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm01 : "-1"]
+  }
+
+# Last Revenue Date
+  measure: sum_net_revenue_less_obi_lst_rev_dt {
+    label: "Net Revenue Less OBI Last Revenue Date"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last Revenue Date"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the last revenue date."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.is_lst_rev_date: "Yes"]
+  }
+
+# Last Three Cost Model Months
+  measure: sum_net_revenue_less_obi_lcm03 {
+    label: "Net Revenue Less OBI Last Three Cost Model Months"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last Three Cost Model Months"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the last three cost model months."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm03 : "0"]
+  }
+
+# Last Three Cost Model Months Last Year
+  measure: sum_net_revenue_less_obi_lcm03_last_year {
+    label: "Net Revenue Less OBI Last Three Cost Model Months Last Year"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last Three Cost Model Months Last Year"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the last three cost model months last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm03 : "-1"]
+  }
+
+# Last Six Cost Model Months
+  measure: sum_net_revenue_less_obi_lcm06 {
+    label: "Net Revenue Less OBI Last Six Cost Model Months"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last Six Cost Model Months"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the last six cost model months."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm06 : "0"]
+  }
+
+# Last 12 Cost Model Months
+  measure: sum_net_revenue_less_obi_lcm12 {
+    label: "Net Revenue Less OBI Last 12 Cost Model Months"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last 12 Cost Model Months"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the last 12 cost model months."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm12 : "0"]
+  }
+
+# Last 12 Cost Model Months Last Year
+  measure: sum_net_revenue_less_obi_lcm12_last_year {
+    label: "Net Revenue Less OBI Last 12 Cost Model Months Last Year"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Last 12 Cost Model Months Last Year"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) for the last 12 cost model months last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm12 : "-1"]
+  }
+
+############################################################################################################################
+# Measure: Net Revenue Less OBI (for costed months only)
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last year
+# Modified 4/22/2020 by Shiva & Pedro
+############################################################################################################################
+# YTD Cost Months
+  measure: sum_net_revenue_less_obi_cst_ytd {
+    label: "Net Revenue Less OBI YTD with Cost"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "YTD with Cost"
+    description: "The Total Net Revenue Less Off Bill Incentive (OBI) year-to-date YTD) with cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcmytd : "0"]
+  }
+
+# YTD Last Year Cost Months
+  measure: sum_net_revenue_less_obi_cst_ytd_last_year {
+    label: "Net Revenue Less OBI YTD Last Year with Cost"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "YTD Last Year with Cost"
+    description: "The Total Net Revenue Less Off Bill Incentive (OBI) year-to-date (YTD) last year with cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcmytd : "-1"]
+  }
+
+# MTD Cost Months
+  measure: sum_net_revenue_less_obi_cst_mtd {
+    label: "Net Revenue Less OBI MTD with Cost"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "MTD with Cost"
+    description: "The Total Net Revenue Less Off Bill Incentive (OBI) month-to-date (MTD) with Cost ."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm01 : "0"]
+  }
+
+# MTD Last Year Cost Months
+  measure: sum_net_revenue_less_obi_cst_mtd_last_year {
+    label: "Net Revenue Less OBI MTD Last Year with Cost"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "MTD Last Year with Cost"
+    description: "The Total Net Revenue Less Off Bill Incentive (OBI) month to date (MTD) last year with cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi} ;;
+    filters: [pre_computed_calendar.ind_lcm01 : "-1"]
+  }
+
+############################################################################################################################
+# Measure: Net Revenue Less OBI per Revenue Day
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago
+# Modified 5/8/2020 by Pedro
+############################################################################################################################
+# YTD
+  measure: sum_net_revenue_less_obi_day_ytd {
+    label: "Net Revenue Less OBI per Day YTD"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "YTD"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) per revenue day for the current year-to-date (YTD)."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_ytd}, ${pre_computed_calendar.sum_rev_day_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: sum_net_revenue_less_obi_day_ytd_last_year {
+    label: "Net Revenue Less OBI per Day YTD Last Year"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "YTD Last Year"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) per revenue day for the year-to-date (YTD) 1 year ago."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_ytd_last_year}, ${pre_computed_calendar.sum_rev_day_ytd_last_year}) ;;
+  }
+
+# MTD
+  measure: sum_net_revenue_less_obi_perday_mtd {
+    label: "Net Revenue Less OBI per Day MTD"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "MTD"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) per revenue day for the current month-to-date (MTD)."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_mtd}, ${pre_computed_calendar.sum_rev_day_mtd}) ;;
+  }
+
+# MTD Last Year
+  measure: sum_net_revenue_less_obi_perday_mtd_last_year {
+    label: "Net Revenue Less OBI per Day MTD Last Year"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "MTD Last Year"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) per revenue day for the month-to-date (MTD) 1 year ago."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_mtd_last_year}, ${pre_computed_calendar.sum_rev_day_mtd_month12_ago}) ;;
+  }
+
+# MTD 2 Years Ago
+  measure: sum_net_revenue_less_obi_perday_mtd_2_years_ago {
+    label: "Net Revenue Less OBI per Day MTD 2 Years Ago"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "MTD 2 Years Ago"
+    description: "Total Net Revenue Less Off Bill Incentive (OBI) per revenue day for the month-to-date (MTD) 2 years ago."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_mtd_2_years_ago}, ${pre_computed_calendar.sum_rev_day_mtd_month24_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Net Revenue Less OBI - Total; Revenue and Percent
+# Time Periods: YTD vs YTD Last Year, MTD vs MTD Last Year, MTD vs MTD 2 Years Ago
+# Modified 5/8/2020 by Shiva & Pedro
+############################################################################################################################
+# YTD YOY Change Amount
+  measure: change_amt_sum_net_revenue_less_obi_ytd_yoy {
+    label: "Net Revenue Less OBI Change YTD YOY"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Change YTD YOY"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_ytd} - ${sum_net_revenue_less_obi_ytd_last_year} ;;
+  }
+
+# YTD YOY Change Percent
+  measure: change_pct_sum_net_revenue_less_obi_ytd_yoy {
+    label: "Net Revenue Less OBI Change % YTD vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Change % YTD vs 1 Year Ago"
+    description: "Percent Change in Net Revenue Less Off Bill Incentive (OBI) year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_net_revenue_less_obi_ytd} - ${sum_net_revenue_less_obi_ytd_last_year}, ${sum_net_revenue_less_obi_ytd_last_year}) ;;
+  }
+
+# MTD YOY Change Amount
+  measure: change_amt_sum_net_revenue_less_obi_mtd_yoy {
+    label: "Net Revenue Less OBI Change MTD vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Change MTD vs 1 Year Ago"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_mtd} - ${sum_net_revenue_less_obi_mtd_last_year} ;;
+  }
+
+# MTD YOY Change Percent
+  measure: change_pct_sum_net_revenue_less_obi_mtd_yoy {
+    label: "Net Revenue Less OBI Change % MTD vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Change % MTD vs 1 Year Ago"
+    description: "Percent Change in Net Revenue Less Off Bill Incentive (OBI) month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_net_revenue_less_obi_mtd} - ${sum_net_revenue_less_obi_mtd_last_year}, ${sum_net_revenue_less_obi_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago YOY Change Amount
+  measure: change_amt_sum_net_revenue_less_obi_mtd_2_years_ago_yoy {
+    label: "Net Revenue Less OBI Change MTD vs 2 Years Ago"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Change MTD vs 2 Years Ago"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_mtd} - ${sum_net_revenue_less_obi_mtd_2_years_ago} ;;
+  }
+
+# MTD 2 Years Ago YOY Change Percent
+  measure: change_pct_sum_net_revenue_less_obi_mtd_2_years_ago_yoy {
+    label: "Net Revenue Less OBI Change % MTD vs 2 Years Ago"
+    group_label: "Net Revenue Less OBI"
+    group_item_label: "Change % MTD vs 2 Years Ago"
+    description: "Percent Change in Net Revenue Less Off Bill Incentive (OBI) month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_net_revenue_less_obi_mtd} - ${sum_net_revenue_less_obi_mtd_2_years_ago}, ${sum_net_revenue_less_obi_mtd_2_years_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Net Revenue Less OBI - Per Revenue Day; Revenue and Percent
+# Time Periods: YTD vs YTD Last Year, MTD vs MTD Last Year
+# Modified 5/8/2020 by Shiva& Pedro
+############################################################################################################################
+# YTD YOY Change Amount
+  measure: change_amt_sum_net_revenue_less_obi_day_ytd_yoy {
+    label: "Net Revenue Less OBI per Day Change YTD vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "Change YTD vs 1 Year Ago"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) per revenue day year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_day_ytd} - ${sum_net_revenue_less_obi_day_ytd_last_year} ;;
+  }
+
+# YTD YOY Change Percent
+  measure: change_pct_sum_net_revenue_less_obi_day_ytd_yoy {
+    label: "Net Revenue Less OBI per Day Change % YTD vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "Change % YTD vs 1 Year Ago"
+    description: "Percent Change in Net Revenue Less Off Bill Incentive (OBI) per revenue day year to date (YTD) vs year to date (YTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_net_revenue_less_obi_day_ytd} - ${sum_net_revenue_less_obi_day_ytd_last_year}, ${sum_net_revenue_less_obi_day_ytd_last_year}) ;;
+  }
+
+# MTD YOY Change Amount
+  measure: change_amt_sum_net_revenue_less_obi_perday_mtd_yoy {
+    label: "Net Revenue Less OBI per Day Change MTD vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "Change MTD vs 1 Year Ago"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) per revenue day month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_perday_mtd} - ${sum_net_revenue_less_obi_perday_mtd_last_year} ;;
+  }
+
+# MTD YOY Change Percent
+  measure: change_pct_sum_net_revenue_less_obi_perday_mtd_yoy {
+    label: "Net Revenue Less OBI per Day Change % MTD vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "Change % MTD vs 1 Year Ago"
+    description: "Percent Change in Net Revenue Less Off Bill Incentive (OBI) per revenue day month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_net_revenue_less_obi_perday_mtd} - ${sum_net_revenue_less_obi_perday_mtd_last_year}, ${sum_net_revenue_less_obi_perday_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago YOY Change Amount
+  measure: change_amt_sum_net_revenue_less_obi_perday_mtd_2_years_ago_yoy {
+    label: "Net Revenue Less OBI per Day Change MTD vs 2 Years Ago"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "Change MTD vs 2 Years Ago"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) per revenue day month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_perday_mtd} - ${sum_net_revenue_less_obi_perday_mtd_2_years_ago} ;;
+  }
+
+# MTD 2 Years Ago YOY Change Percent
+  measure: change_pct_sum_net_revenue_less_obi_perday_mtd_2_years_ago_yoy {
+    label: "Net Revenue Less OBI per Day Change % MTD vs 2 Year Ago"
+    group_label: "Net Revenue Less OBI per Day"
+    group_item_label: "Change % MTD vs 2 Years Ago"
+    description: "Percent Change in Net Revenue Less Off Bill Incentive (OBI) per revenue day month to date (MTD) vs month to date (MTD) 2 years ago."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_net_revenue_less_obi_perday_mtd} - ${sum_net_revenue_less_obi_perday_mtd_2_years_ago}, ${sum_net_revenue_less_obi_perday_mtd_2_years_ago}) ;;
+  }
+
+##################################################################################################################################
+# Measure: Net Revenue Less OBI Less FSC
+# Time Periods: YTD, YTD Last Year, QTD, MTD, MTD Last Year, MTD 2 Years Ago, Last Revenue Date, Last Month, Last 12 Cost Model Months,
+#               Last 12 Cost Model Months Last Year
+# Modified 6/24/2021
+##################################################################################################################################
+# YTD
+  measure: sum_net_revenue_less_obi_fsc_ytd {
+    label: "Net Revenue Less OBI Less FSC YTD"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "YTD"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the current year-to-date (YTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_net_revenue_less_obi_fsc_ytd_last_year {
+    label: "Net Revenue Less OBI Less FSC YTD Last Year"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "YTD Last Year"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the year-to-date (YTD) 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+  measure: sum_net_revenue_less_obi_fsc_qtd {
+    label: "Net Revenue Less OBI Less FSC QTD"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "QTD"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the current year-to-date (QTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_qtd: "0"]
+  }
+
+# MTD
+  measure: sum_net_revenue_less_obi_fsc_mtd {
+    label: "Net Revenue Less OBI Less FSC MTD"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "MTD"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the current month-to-date (MTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+# MTD Last Month
+  measure: sum_net_revenue_less_obi_fsc_mtd_last_month {
+    label: "Net Revenue Less OBI Less FSC MTD Last Month"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "MTD Last Month"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the previous month-to-date (MTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-1"]
+  }
+
+# MTD Last Year
+  measure: sum_net_revenue_less_obi_fsc_mtd_last_year {
+    label: "Net Revenue Less OBI Less FSC MTD Last Year"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "MTD Last Year"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the month-to-date (MTD) 1 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+# MTD 2 Years Ago
+  measure: sum_net_revenue_less_obi_fsc_mtd_2_years_ago {
+    label: "Net Revenue Less OBI Less FSC MTD 2 Years Ago"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "MTD 2 Years Ago"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the month-to-date (MTD) 2 year ago."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-24"]
+  }
+
+# Last Revenue Date
+  measure: sum_net_revenue_less_obi_fsc_lst_rev_dt {
+    label: "Net Revenue Less OBI Less FSC Last Revenue Date"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "Last Revenue Date"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the last revenue date."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.is_lst_rev_date: "Yes"]
+  }
+
+# Last Month
+  measure: sum_net_revenue_less_obi_fsc_last_month {
+    label: "Net Revenue Less OBI Less FSC Last Month"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "Last Month"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the last complete month."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_mo: "-1"]
+  }
+
+# Last 12 Cost Model Months
+  measure: sum_net_revenue_less_obi_fsc_lcm12 {
+    label: "Net Revenue Less OBI Less FSC Last 12 Cost Model Months"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "Last 12 Cost Model Months"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the last 12 cost model months."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_lcm12: "0"]
+  }
+
+# Last 12 Cost Model Months Last Year
+  measure: sum_net_revenue_less_obi_fsc_lcm12_last_year {
+    label: "Net Revenue Less OBI Less FSC Last 12 Cost Model Months Last Year"
+    group_label: "Net Revenue Less OBI Less FSC"
+    group_item_label: "Last 12 Cost Model Months Last Year"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) for the last 12 cost model months last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${net_revenue_less_obi_fsc} ;;
+    filters: [pre_computed_calendar.ind_lcm12: "-1"]
+  }
+
+#######################################################################################################################
+# Measure: Net Revenue Less OBI Less FSC per Revenue Day
+# Time Periods: YTD, YTD Last Year, QTD,  MTD, MTD Last Year, Last 12 Cost Model Months, Last 12 Cost Model Months Last Year
+# Modified 6/24/2021
+########################################################################################################################
+# YTD
+  measure: sum_net_revenue_less_obi_fsc_day_ytd {
+    label: "Net Revenue Less OBI Less FSC per Day YTD"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "YTD"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day year-to-date (YTD)."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_ytd}, ${pre_computed_calendar.sum_rev_day_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: sum_net_revenue_less_obi_fsc_day_ytd_last_year {
+    label: "Net Revenue Less OBI Less FSC per Day YTD Last Year"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "YTD Last Year"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day year-to-date (YTD) last year."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_ytd_last_year}, ${pre_computed_calendar.sum_rev_day_ytd_last_year}) ;;
+  }
+
+  measure: sum_net_revenue_less_obi_fsc_day_qtd {
+    label: "Net Revenue Less OBI Less FSC per Day QTD"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "QTD"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day year-to-date (QTD)."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_qtd}, ${pre_computed_calendar.sum_rev_day_qtd}) ;;
+  }
+
+# MTD
+  measure: sum_net_revenue_less_obi_fsc_perday_mtd {
+    label: "Net Revenue Less OBI Less FSC per Day MTD"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "MTD"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day month-to-date (MTD)."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_mtd}, ${rev_days_vw.sum_rev_day_mtd}) ;;
+  }
+
+# MTD Last Month
+  measure: sum_net_revenue_less_obi_fsc_perday_mtd_last_month {
+    label: "Net Revenue Less OBI Less FSC per Day MTD Last Month"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "MTD Last Month"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day month-to-date (MTD) previous month."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_mtd_last_month}, ${rev_days_vw.sum_rev_day_mtd_lst_mo}) ;;
+  }
+# MoM Change Difference
+  measure: change_net_revenue_less_obi_perday_mtd_difference_mom {
+    label: "Net Revenue Less OBI Less FSC per Day MTD MoM Difference"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "MTD MoM Difference"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day month-to-date (MTD) difference from previous month-to-date"
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_fsc_perday_mtd} - ${sum_net_revenue_less_obi_fsc_perday_mtd_last_month} ;;
+  }
+
+# MTD Last Year
+  measure: sum_net_revenue_less_obi_fsc_perday_mtd_last_year {
+    label: "Net Revenue Less OBI Less FSC per Day MTD Last Year"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "MTD Last Year"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day month-to-date (MTD) last year."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_mtd_last_year}, ${rev_days_vw.sum_rev_day_mtd_last_year}) ;;
+  }
+
+# Last 12 Cost Model Months
+  measure: sum_net_revenue_less_obi_fsc_perday_lcm12 {
+    label: "Net Revenue Less OBI Less FSC per Day Last 12 Cost Model Months"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "Last 12 Cost Model Months"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day last 12 cost model months."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_lcm12}, ${rev_days_vw.sum_rev_day_lcm12}) ;;
+  }
+
+# Last 12 Cost Model Months Last Year
+  measure: sum_net_revenue_less_obi_fsc_perday_lcm12_last_year {
+    label: "Net Revenue Less OBI Less FSC per Day Last 12 Cost Model Months Last Year"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "Last 12 Cost Model Months Last Year"
+    description: "Total net revenue less off bill incentive (OBI) less fuel surcharge (FSC) per revenue day last 12 cost model months last year."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_lcm12_last_year}, ${rev_days_vw.sum_rev_day_lcm12_last_year}) ;;
+  }
+
+#############################################################################################################################
+# Measure: Change in Net Revenue Less OBI Less FSC - Total and Per Revenue Day; Revenue and Percent
+# Time Periods:
+#         YTD vs., YTD Last Year, MTD vs., MTD Last Year, Last 12 Cost Model Months vs., Last 12 Cost Model Months Last Year
+# Modified 4/24/2020 
+#############################################################################################################################
+  measure: change_amt_sum_net_revenue_less_obi_fsc_ytd_yoy {
+    label: "Net Revenue Less OBI Less FSC Change YTD YOY"
+    group_label: "Net Revenue Less OBI Less FSC YOY Change"
+    group_item_label: "Change YTD YOY"
+    description: "The difference in Net Revenue Less Off Bill Incentive (OBI) less fuel surcharge (FSC) year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_net_revenue_less_obi_fsc_ytd} - ${sum_net_revenue_less_obi_fsc_ytd_last_year} ;;
+  }
+
+  measure: change_pct_sum_net_revenue_less_obi_fsc_ytd_yoy {
+    label: "Net Revenue Less OBI Less FSC Change % YTD YOY"
+    group_label: "Net Revenue Less OBI Less FSC YOY Change"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in Net Revenue Less Off Bill Incentive (OBI) year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_ytd} - ${sum_net_revenue_less_obi_fsc_ytd_last_year}, ${sum_net_revenue_less_obi_fsc_ytd_last_year}) ;;
+  }
+
+    measure: change_amt_sum_net_revenue_less_obi_fsc_day_ytd_yoy {
+    label: "Net Revenue Less OBI Less FSC per Day Change YTD YOY"
+    group_label: "Net Revenue Less OBI Less FSC per Day YOY Change"
+    group_item_label: "Change YTD YOY"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) year to date (YTD) per revenue day year over year (YOY)."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_net_revenue_less_obi_fsc_day_ytd} - ${sum_net_revenue_less_obi_fsc_day_ytd_last_year} ;;
+  }
+
+  measure: change_pct_sum_net_revenue_less_obi_fsc_day_ytd_yoy {
+    label: "Net Revenue Less OBI Less FSC per Day Change % YTD YOY"
+    group_label: "Net Revenue Less OBI Less FSC per Day YOY Change"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in Net Revenue Less Off Bill Incentive (OBI) year to date (YTD) per revenue year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_day_ytd} - ${sum_net_revenue_less_obi_fsc_day_ytd_last_year}, ${sum_net_revenue_less_obi_fsc_day_ytd_last_year}) ;;
+  }
+
+  measure: change_amt_sum_net_revenue_less_obi_fsc_perday_mtd_yoy {
+    label: "Net Revenue Less OBI Less FSC per Day Change MTD vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "Change MTD vs 1 Year Ago"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) Less Fuel Surcharge (FSC) per revenue day month to date (MTD) vs month to date (MTD) 1 year ago."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_fsc_perday_mtd} - ${sum_net_revenue_less_obi_fsc_perday_mtd_last_year} ;;
+  }
+
+  measure: change_amt_sum_net_revenue_less_obi_fsc_perday_lcm12_yoy {
+    label: "Net Revenue Less OBI Less FSC per Day Change Last 12 Cost Model Months vs 1 Year Ago"
+    group_label: "Net Revenue Less OBI Less FSC per Day"
+    group_item_label: "Change Last 12 Cost Model Months vs 1 Year Ago"
+    description: "Change in Net Revenue Less Off Bill Incentive (OBI) Less Fuel Surcharge (FSC) per revenue day last 12 cost model months vs last 12 cost model months 1 year ago."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_net_revenue_less_obi_fsc_perday_lcm12} - ${sum_net_revenue_less_obi_fsc_perday_lcm12_last_year} ;;
+  }
+
+############################################################################################################################
+# Measure: Accessorial Revenue
+# Time Periods: MTD, MTD Last Year, YTD, YTD Last Year
+# Modified 5/5/2020 
+############################################################################################################################
+# YTD
+  measure: sum_accsrl_rev_ytd {
+    label: "Accessorial Revenue YTD"
+    group_label: "Accessorial Revenue"
+    group_item_label: "YTD"
+    description: "The total revenue of all Accessorials, including Fuel Surcharge (FSC) year-to-date (YTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${accsrl_rev} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_accsrl_rev_ytd_last_year {
+    label: "Accessorial Revenue YTD Last Year"
+    group_label: "Accessorial Revenue"
+    group_item_label: "YTD Last Year"
+    description: "The total revenue of all Accessorials, including Fuel Surcharge (FSC) year-to-date (YTD) last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${accsrl_rev} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# MTD
+  measure: sum_accsrl_rev_mtd {
+    label: "Accessorial Revenue MTD"
+    group_label: "Accessorial Revenue"
+    group_item_label: "MTD"
+    description: "The total revenue of all Accessorials, including Fuel Surcharge (FSC) month-to-date (MTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${accsrl_rev} ;;
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+# MTD Last Year
+  measure: sum_accsrl_rev_mtd_last_year {
+    label: "Accessorial Revenue MTD Last Year"
+    group_label: "Accessorial Revenue"
+    group_item_label: "MTD Last Year"
+    description: "The total revenue of all Accessorials, including Fuel Surcharge (FSC) month-to-date (MTD) last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${accsrl_rev} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+############################################################################################################################
+# Accessorial Revenue FSC
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year
+#
+# Modified 5/5/2020 
+############################################################################################################################
+# YTD
+  measure: sum_accsrl_fsc_rev_ytd {
+    label: "FSC Revenue YTD"
+    group_label: "FSC Revenue"
+    group_item_label: "YTD"
+    description: "Total revenue of fuel surcharge (FSC) for current year-to-date (YTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${accsrl_fsc_rev} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_accsrl_fsc_rev_ytd_last_year {
+    label: "FSC Revenue YTD Last Year"
+    group_label: "FSC Revenue"
+    group_item_label: "YTD Last Year"
+    description: "Total revenue of fuel surcharge (FSC) for the year-to-date (YTD) last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${accsrl_fsc_rev} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# MTD
+  measure: sum_accsrl_fsc_rev_mtd {
+    label: "FSC Revenue MTD"
+    group_label: "FSC Revenue"
+    group_item_label: "MTD"
+    description: "Total revenue of fuel surcharge (FSC) for current month-to-date (MTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${accsrl_fsc_rev} ;;
+    filters: [pre_computed_calendar.ind_mtd: "0"]
+  }
+
+# MTD Last Year
+  measure: sum_accsrl_fsc_rev_mtd_last_year {
+    label: "FSC Revenue MTD Last Year"
+    group_label: "FSC Revenue"
+    group_item_label: "MTD Last Year"
+    description: "Total revenue of fuel surcharge (FSC) for the month-to-date (MTD) last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${accsrl_fsc_rev} ;;
+    filters: [pre_computed_calendar.ind_mtd: "-12"]
+  }
+
+############################################################################################################################
+# Accessorial Revenue FSC per Revenue Day
+# Time Periods: YTD, YTD Last Year
+#
+# Modified 5/5/2020 
+############################################################################################################################
+# YTD
+  measure: sum_accsrl_fsc_rev_day_ytd {
+    label: "Fuel Surcharge (FSC) Revenue per Day YTD"
+    group_label: "FSC Revenue per Day"
+    group_item_label: "YTD"
+    description: "Total revenue of fuel surcharge (FSC) per revenue day year-to-date (YTD)."
+    type: number
+    value_format_name: usd_0
+    sql:  safe_divide(${sum_accsrl_fsc_rev_ytd},${pre_computed_calendar.sum_rev_day_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: sum_accsrl_fsc_rev_day_ytd_last_year {
+    label: "Fuel Surcharge (FSC) Revenue per Day YTD Last Year"
+    group_label: "FSC Revenue per Day"
+    group_item_label: "YTD Last Year"
+    description: "Total revenue of Fuel Surcharge (FSC) per Revenue Day year-to-date (YTD) last year."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_accsrl_fsc_rev_ytd_last_year},${pre_computed_calendar.sum_rev_day_ytd_last_year}) ;;
+  }
+
+# MTD
+  measure: sum_accsrl_fsc_rev_perday_mtd {
+    label: "Fuel Surcharge (FSC) Revenue per Day MTD"
+    group_label: "FSC Revenue per Day"
+    group_item_label: "MTD"
+    description: "Total revenue of fuel surcharge (FSC) per revenue day month-to-date (MTD)."
+    type: number
+    value_format_name: usd_0
+    sql:  safe_divide(${sum_accsrl_fsc_rev_mtd}, ${pre_computed_calendar.sum_rev_day_mtd}) ;;
+  }
+
+# MTD Last Year
+  measure: sum_accsrl_fsc_rev_perday_mtd_last_year {
+    label: "Fuel Surcharge (FSC) Revenue per Day MTD Last Year"
+    group_label: "FSC Revenue per Day"
+    group_item_label: "MTD Last Year"
+    description: "Total revenue of Fuel Surcharge (FSC) per Revenue Day month-to-date (MTD) last year."
+    type: number
+    value_format_name: usd_0
+    sql: safe_divide(${sum_accsrl_fsc_rev_mtd_last_year}, ${pre_computed_calendar.sum_rev_day_mtd_month12_ago}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Accessorial FSC - Total and Per Revenue Day; Revenue and Percent
+# Time Periods: YTD vs YTD Last Year, MTD vs MTD Last Year
+# Modified 5/5/2020 
+############################################################################################################################
+# YTD YOY Change Amount
+  measure: change_amt_sum_accsrl_fsc_rev_ytd_yoy {
+    label: "FSC Revenue Change YTD YOY"
+    group_label: "FSC Revenue"
+    group_item_label: "Change YTD YOY"
+    description: "Difference in Fuel Surcharge (FSC) revenue year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_accsrl_fsc_rev_ytd} - ${sum_accsrl_fsc_rev_ytd_last_year} ;;
+  }
+
+# YTD YOY Change Percent
+  measure: change_pct_sum_accsrl_fsc_rev_ytd_yoy {
+    label: "FSC REvenue Change % YTD YOY"
+    group_label: "FSC Revenue"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in Fuel Surcharge (FSC) revenue year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_accsrl_fsc_rev_ytd} - ${sum_accsrl_fsc_rev_ytd_last_year}, ${sum_accsrl_fsc_rev_ytd_last_year}) ;;
+  }
+
+# MTD YOY Change Amount
+  measure: change_amt_sum_accsrl_fsc_rev_mtd_yoy {
+    label: "FSC Revenue Change MTD YOY"
+    group_label: "FSC Revenue"
+    group_item_label: "Change MTD YOY"
+    description: "Difference in Fuel Surcharge (FSC) revenue month to date (MTD) year over year (YOY)."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_accsrl_fsc_rev_mtd} - ${sum_accsrl_fsc_rev_mtd_last_year} ;;
+  }
+
+# MTD YOY Change Percent
+  measure: change_pct_sum_accsrl_fsc_rev_mtd_yoy {
+    label: "FSC Revenue Change % MTD YOY"
+    group_label: "FSC Revenue"
+    group_item_label: "Change % MTD YOY"
+    description: "Percent Change in Fuel Surcharge (FSC) revenue month to date (MTD) year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_accsrl_fsc_rev_mtd} - ${sum_accsrl_fsc_rev_mtd_last_year}, ${sum_accsrl_fsc_rev_mtd_last_year}) ;;
+  }
+
+# YTD YOY Change Amount
+  measure: change_amt_sum_accsrl_fsc_rev_day_ytd_yoy {
+    label: "FSC Revenue per Day Change YTD YOY"
+    group_label: "FSC Revenue per Day"
+    group_item_label: "Change YTD YOY"
+    description: "Difference in Fuel Surcharge (FSC) revenue year-to-date (YTD) per Revenue Day year-over-year (YOY)."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_accsrl_fsc_rev_day_ytd} - ${sum_accsrl_fsc_rev_day_ytd_last_year} ;;
+  }
+
+# YTD YOY Change Percent
+  measure: change_pct_sum_accsrl_fsc_rev_day_ytd_yoy {
+    label: "FSC Revenue per Day Change % YTD YOY"
+    group_label: "FSC Revenue per Day"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in Fuel Surcharge (FSC) revenue year-to-date (YTD) per Revenue Day year-over-year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_accsrl_fsc_rev_day_ytd} - ${sum_accsrl_fsc_rev_day_ytd_last_year}, ${sum_accsrl_fsc_rev_day_ytd_last_year}) ;;
+  }
+
+# MTD YOY Change Amount
+  measure: change_amt_sum_accsrl_fsc_rev_perday_mtd_yoy {
+    label: "FSC Revenue per Day Change MTD YOY"
+    group_label: "FSC Revenue per Day"
+    group_item_label: "Change MTD YOY"
+    description: "Difference in Fuel Surcharge (FSC) revenue month-to-date (MTD) per Revenue Day year-over-year (YOY)."
+    type: number
+    value_format_name: usd_0
+    sql: ${sum_accsrl_fsc_rev_perday_mtd} - ${sum_accsrl_fsc_rev_perday_mtd_last_year} ;;
+  }
+
+# MTD YOY Change Percent
+  measure: change_pct_sum_accsrl_fsc_rev_perday_mtd_yoy {
+    label: "FSC Revenue per Day Change % MTD YOY"
+    group_label: "FSC Revenue per Day"
+    group_item_label: "Change % MTD YOY"
+    description: "Percent Change in Fuel Surcharge (FSC) revenue month-to-date (MTD) per Revenue Day year-over-year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_accsrl_fsc_rev_perday_mtd} - ${sum_accsrl_fsc_rev_perday_mtd_last_year}, ${sum_accsrl_fsc_rev_perday_mtd_last_year}) ;;
+  }
+
+############################################################################################################################
+# Measure: Yield Less OBI
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago, Last Revenue Date
+# Modified 5/8/2020 
+############################################################################################################################
+# YTD
+  measure: yield_less_obi_ytd {
+    label: "Yield Less OBI YTD"
+    group_label: "Yield Less OBI"
+    group_item_label: "YTD"
+    description: "The Yield Less Off Bill Incencive (OBI) for the current year-to-date (YTD). Represents Net Revenue Less OBI per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_ytd}, ${sum_cwt_weight_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: yield_less_obi_ytd_last_year {
+    label: "Yield Less OBI YTD 1 Year Ago"
+    group_label: "Yield Less OBI"
+    group_item_label: "YTD 1 Year Ago"
+    description: "The Yield Less Off Bill Incencive (OBI) for the year-to-date (YTD) 1 year ago. Represents Net Revenue Less OBI per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_ytd_last_year}, ${sum_cwt_weight_ytd_last_year}) ;;
+  }
+
+# MTD
+  measure: yield_less_obi_mtd {
+    label: "Yield Less OBI MTD"
+    group_label: "Yield Less OBI"
+    group_item_label: "MTD"
+    description: "The Yield Less Off Bill Incencive (OBI) for the current month-to-date (MTD). Represents Net Revenue Less OBI per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_mtd}, ${sum_cwt_weight_mtd}) ;;
+  }
+
+# MTD Last Year
+  measure: yield_less_obi_mtd_last_year {
+    label: "Yield Less OBI MTD 1 Year Ago"
+    group_label: "Yield Less OBI"
+    group_item_label: "MTD 1 Year Ago"
+    description: "The Yield Less Off Bill Incencive (OBI) for the month-to-date (MTD) 1 year ago. Represents Net Revenue Less OBI per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_mtd_last_year}, ${sum_cwt_weight_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago
+  measure: yield_less_obi_mtd_2_years_ago {
+    label: "Yield Less OBI MTD 2 Years Ago"
+    group_label: "Yield Less OBI"
+    group_item_label: "MTD 2 Years Ago"
+    description: "The Yield Less Off Bill Incencive (OBI) for the month-to-date (MTD) 2 years ago. Represents Net Revenue Less OBI per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_mtd_2_years_ago}, ${sum_cwt_weight_mtd_2_years_ago}) ;;
+  }
+
+# Last Revenue Date
+  measure: yield_less_obi_lst_rev_dt {
+    label: "Yield Less OBI Last Revenue Date"
+    group_label: "Yield Less OBI"
+    group_item_label: "Last Revenue Date"
+    description: "The Yield Less Off Bill Incencive (OBI) for the last revenue date. Represents Net Revenue Less OBI per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_lst_rev_dt}, ${sum_cwt_weight_lst_rev_dt}) ;;
+  }
+
+#############################
+# Yiled Less FSC
+
+# Last Month
+  measure: yield_less_fsc_last_month {
+    label: "Yield Less FSC Last Month"
+    group_label: "Yield Less FSC"
+    group_item_label: "Last Month"
+    description: "The Yield Less Fuel Surcharge (FSC) for the last month current year. Represents Net Revenue Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_fsc_last_month}, ${sum_cwt_weight_last_month}) ;;
+  }
+
+# Last Month Last Year
+  measure: yield_less_fsc_last_month_last_year {
+    label: "Yield Less FSC Last Month 1 Year Ago"
+    group_label: "Yield Less FSC"
+    group_item_label: "Last Month 1 Year Ago"
+    description: "The Yield Less Fuel Surcharge (FSC) for the Last Month 1 year ago. Represents Net Revenue Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_fsc_last_month_last_year}, ${sum_cwt_weight_last_month_last_year}) ;;
+  }
+
+# Current Year YTD
+
+  measure: yield_less_fsc_current_year_ytd {
+    label: "Yield Less FSC Current Year YTD"
+    group_label: "Yield Less FSC"
+    group_item_label: "Current Year YTD"
+    description: "The Yield Less Fuel Surcharge (FSC) for the current year ytd. Represents Net Revenue Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_fsc_ytd_current_year}, ${sum_cwt_weight_ytd}) ;;
+  }
+
+# Last Year YTD
+  measure: yield_less_fsc_last_year_ytd {
+    label: "Yield Less FSC Last Year YTD"
+    group_label: "Yield Less FSC"
+    group_item_label: "Last Year YTD"
+    description: "The Yield Less Fuel Surcharge (FSC) for the last year ytd. Represents Net Revenue Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_fsc_ytd_last_year}, ${sum_cwt_weight_ytd_last_year}) ;;
+  }
+
+# Current Year MTD
+
+  measure: yield_less_fsc_current_year_mtd {
+    label: "Yield Less FSC Current Year MTD"
+    group_label: "Yield Less FSC"
+    group_item_label: "Current Year MTD"
+    description: "The Yield Less Fuel Surcharge (FSC) for the current year mtd. Represents Net Revenue Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_fsc_mtd_current_year}, ${sum_cwt_weight_mtd}) ;;
+  }
+
+# Last Year MTD
+  measure: yield_less_fsc_last_year_mtd {
+    label: "Yield Less FSC Last Year MTD"
+    group_label: "Yield Less FSC"
+    group_item_label: "Last Year MTD"
+    description: "The Yield Less Fuel Surcharge (FSC) for the last year mtd. Represents Net Revenue Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_fsc_mtd_last_year}, ${sum_cwt_weight_mtd_last_year}) ;;
+  }
+
+
+#############################
+
+
+############################################################################################################################
+# Measure: Change in Yield Less OBI - Total and Per Revenue Day; Revenue and Percent
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago
+# Modified 4/28/2020 
+############################################################################################################################
+# YTD
+  measure: change_amt_yield_less_obi_ytd_yoy {
+    label: "Yield Less OBI Change YTD YOY"
+    group_label: "Yield Less OBI"
+    group_item_label: "Change YTD YOY"
+    description: "The difference in Yield Less OBI year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: usd
+    sql: ${yield_less_obi_ytd} - ${yield_less_obi_ytd_last_year} ;;
+  }
+
+# YTD Last Year
+  measure: change_pct_yield_less_obi_ytd_yoy {
+    label: "Yield Less OBI Change % YTD YOY"
+    group_label: "Yield Less OBI"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in Yield Less OBI year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${yield_less_obi_ytd} - ${yield_less_obi_ytd_last_year}, ${yield_less_obi_ytd_last_year}) ;;
+  }
+
+# MTD
+
+# MTD Last Year
+
+# MTD 2 Years Ago
+
+############################################################################################################################
+# Yield Less OBI Less FSC
+# Time Periods: YTD, YTD Last Year, MTD, MTD Last Year, MTD 2 Years Ago, Last Revenue Date
+# Modified 5/8/2020 
+############################################################################################################################
+# YTD
+  measure: yield_less_obi_fsc_ytd {
+    label: "Yield Less OBI Less FSC YTD"
+    group_label: "Yield Less OBI Less FSC"
+    group_item_label: "YTD"
+    description: "The Yield Less Off Bill Incencive (OBI) less fuel surcharge (FSC) for the shipment year-to-date (YTD).
+                  Represents Net Revenue Less OBI Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_ytd},${sum_cwt_weight_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: yield_less_obi_fsc_ytd_last_year {
+    label: "Yield Less OBI Less FSC YTD Last Year"
+    group_label: "Yield Less OBI Less FSC"
+    group_item_label: "YTD Last Year"
+    description: "The Yield Less Off Bill Incencive (OBI) less fuel surcharge (FSC) for the shipment year-to-date (YTD) last year.
+                  Represents Net Revenue Less OBI Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_ytd_last_year}, ${sum_cwt_weight_ytd_last_year}) ;;
+  }
+
+# MTD
+  measure: yield_less_obi_fsc_mtd {
+    label: "Yield Less OBI Less FSC MTD"
+    group_label: "Yield Less OBI Less FSC"
+    group_item_label: "MTD"
+    description: "The Yield Less Off Bill Incencive (OBI) less fuel surcharge (FSC) for the current month-to-date (MTD).
+                  Represents Net Revenue Less OBI Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_mtd}, ${sum_cwt_weight_mtd}) ;;
+  }
+
+# MTD Last Year
+  measure: yield_less_obi_fsc_mtd_last_year {
+    label: "Yield Less OBI Less FSC MTD 1 Year Ago"
+    group_label: "Yield Less OBI Less FSC"
+    group_item_label: "MTD 1 Year Ago"
+    description: "The Yield Less Off Bill Incencive (OBI) less fuel surcharge (FSC) for the month-to-date (MTD) 1 year ago.
+                  Represents Net Revenue Less OBI Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_mtd_last_year}, ${sum_cwt_weight_mtd_last_year}) ;;
+  }
+
+# MTD 2 Years Ago
+  measure: yield_less_obi_fsc_mtd_2_years_ago {
+    label: "Yield Less OBI Less FSC MTD 2 Years Ago"
+    group_label: "Yield Less OBI Less FSC"
+    group_item_label: "MTD 2 Years Ago"
+    description: "The Yield Less Off Bill Incencive (OBI) less fuel surcharge (FSC) for the month-to-date (MTD) 2 years ago.
+                  Represents Net Revenue Less OBI Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_mtd_2_years_ago}, ${sum_cwt_weight_mtd_2_years_ago}) ;;
+  }
+
+# Last Revenue Date
+  measure: yield_less_obi_fsc_lst_rev_dt {
+    label: "Yield Less OBI Less FSC Last Revenue Date"
+    group_label: "Yield Less OBI Less FSC"
+    group_item_label: "Last Revenue Date"
+    description: "The Yield Less Off Bill Incencive (OBI) less fuel surcharge (FSC) for the last revenue date.
+    Represents Net Revenue Less OBI Less FSC per hundred weight."
+    type: number
+    value_format_name: usd
+    sql: safe_divide(${sum_net_revenue_less_obi_fsc_lst_rev_dt}, ${sum_cwt_weight_lst_rev_dt}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Yield Less OBI Less FSC - Total and Per Revenue Day; Revenue and Percent
+# Time Periods:
+#         YTD vs., YTD Last Year
+# Modified 4/28/2020 
+############################################################################################################################
+  measure: change_amt_yield_less_obi_fsc_ytd_yoy {
+    label: "Yield Less OBI Less FSC Change YTD YOY"
+    group_label: "Yield Less OBI Less FSC"
+    group_item_label: "Change YTD YOY"
+    description: "The difference in yield less off bill incentive (OBI) less fuel surcharge (FSC) year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: usd
+    sql: ${yield_less_obi_fsc_ytd} - ${yield_less_obi_fsc_ytd_last_year} ;;
+  }
+
+  measure: change_pct_yield_less_obi_fsc_ytd_yoy {
+    label: "Yield Less OBI Less FSC Change % YTD YOY"
+    group_label: "Yield Less OBI Less FSC"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in yield less off bill incentive (OBI) less fuel surcharge (FSC) year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${yield_less_obi_fsc_ytd} - ${yield_less_obi_fsc_ytd_last_year}, ${yield_less_obi_fsc_ytd_last_year}) ;;
+  }
+
+############################################################################################################################
+# Profit
+# Time Periods: YTD Cost Model, YTD Last Year Cost Model, Last Cost Model Month, Last 6 Cost Model Months
+# Modified 4/22/2020 
+############################################################################################################################
+# YTD Cost Months
+  measure: sum_profit_cst_ytd {
+    label: "Profit YTD"
+    group_label: "Profit"
+    group_item_label: "YTD"
+    description: "Total Profit of the shipment (Net Revenue Less Off Bill Incentive (OBI) minus Total Cost) for shipments with costing year to date (YTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${profit} ;;
+    filters: [pre_computed_calendar.ind_lcmytd : "0"]
+  }
+
+# YTD Last Year Cost Months
+  measure: sum_profit_cst_ytd_last_year {
+    label: "Profit YTD Last Year"
+    group_label: "Profit"
+    group_item_label: "YTD Last Year"
+    description: "Total Profit of the shipment (Net Revenue Less Off Bill Incentive (OBI) minus Total Cost) for shipments with costing year to date (YTD) last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${profit} ;;
+    filters: [pre_computed_calendar.ind_lcmytd : "-1"]
+  }
+
+# Last Six Cost Model Months
+  measure: sum_profit_lcm06 {
+    label: "Profit Last Six Cost Model Months"
+    group_label: "Profit"
+    group_item_label: "Last Six Cost Model Months"
+    description: "Total Profit of the shipment (Net Revenue Less Off Bill Incentive (OBI) minus Total Cost) for shipments with costing last six months."
+    type: sum
+    value_format_name: usd_0
+    sql: ${profit} ;;
+    filters: [pre_computed_calendar.ind_lcm06 : "0"]
+  }
+
+# Last Cost Model Month
+  measure: sum_profit_lcm01 {
+    label: "Profit Last Cost Model Month"
+    group_label: "Profit"
+    group_item_label: "Last Cost Model Month"
+    description: "Total Profit of the shipment (Net Revenue Less Off Bill Incentive (OBI) minus Total Cost) for shipments with costing last month."
+    type: sum
+    value_format_name: usd_0
+    sql: ${profit} ;;
+    filters: [pre_computed_calendar.ind_lcm01 : "0"]
+  }
+
+############################################################################################################################
+# Measure: Profit per Revenue Day
+# Time Periods: YTD, YTD Last Year
+# Modified 4/24/2020 
+############################################################################################################################
+# YTD Cost Months
+  measure: sum_profit_day_cst_ytd {
+    label: "Profit YTD per Day"
+    group_label: "Profit per Day"
+    group_item_label: "YTD per Day"
+    description: "Total Profit per Revenue Day of the shipment (Net Revenue Less Off Bill Incentive (OBI) minus Total Cost) for shipments with costing year to date (YTD)."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_profit_cst_ytd},${pre_computed_calendar.sum_rev_day_ytd}) ;;
+  }
+
+# YTD Last Year Cost Months
+  measure: sum_profit_ytd_day_ytd_last_year {
+    label: "Profit YTD per Day Last Year"
+    group_label: "Profit per Day"
+    group_item_label: "YTD Last Year per Day"
+    description: "Total Profit per Revenue Day of the shipment (Net Revenue Less Off Bill Incentive (OBI) minus Total Cost) for shipments with costing year to date (YTD) last year."
+    type: number
+    value_format_name: decimal_0
+    sql: safe_divide(${sum_profit_cst_ytd_last_year},${pre_computed_calendar.sum_rev_day_ytd_last_year}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change in Profit - Total and Per Revenue Day; Amount and Percent
+# Time Periods:
+#         YTD vs., YTD Last Year
+# Modified 4/24/2020 
+############################################################################################################################
+  measure: change_amt_sum_profit_cst_ytd_yoy {
+    label: "Profit Change YTD YOY"
+    group_label: "Profit"
+    group_item_label: "Change YTD YOY"
+    description: "The difference in profit year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_profit_cst_ytd} - ${sum_profit_cst_ytd_last_year} ;;
+  }
+
+  measure: change_pct_sum_profit_cst_ytd_yoy {
+    label: "Profit Change % YTD YOY"
+    group_label: "Profit"
+    group_item_label: "Change % YTD YOY"
+    description: "The percent change in profit year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_profit_cst_ytd} - ${sum_profit_cst_ytd_last_year}, ${sum_profit_cst_ytd_last_year}) ;;
+  }
+
+  measure: change_amt_sum_profit_day_cst_ytd_yoy {
+    label: "Profit per Day Change YTD YOY"
+    group_label: "Profit per Day"
+    group_item_label: "Change YTD YOY"
+    description: "The difference in profit per revenue day year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_profit_day_cst_ytd} - ${sum_profit_ytd_day_ytd_last_year} ;;
+  }
+
+  measure: change_pct_sum_profit_day_cst_ytd_yoy {
+    label: "Profit per Day Change % YTD YOY"
+    group_label: "Profit per Day"
+    group_item_label: "Change % YTD YOY"
+    description: "The percent change in profit per revenue day year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_profit_day_cst_ytd} - ${sum_profit_ytd_day_ytd_last_year}, ${sum_profit_ytd_day_ytd_last_year}) ;;
+  }
+
+############################################################################################################################
+# Measure: Operating Ratio % (OR%)
+# Time Periods: YTD Cost Model, YTD Last Year Cost Model, Last Cost Model Month, Last Cost Model Month Last Last Year,
+#               Last Six Cost Model Months, Last 12 Cost Model Months, Last 12 Cost Model Months Last Last Year
+# Modified 4/22/2020 
+############################################################################################################################
+# YTD Cost Months
+  measure: operating_ratio_cst_ytd {
+    label: "Operating Ratio YTD"
+    group_label: "Operating Ratio"
+    group_item_label: "YTD"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing year to date (YTD)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_ytd}, ${sum_net_revenue_less_obi_cst_ytd}) ;;
+  }
+
+# YTD Last Year Cost Months
+  measure: operating_ratio_cst_ytd_last_year {
+    label: "Operating Ratio YTD Last Year"
+    group_label: "Operating Ratio"
+    group_item_label: "YTD Last Year"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing year to date (YTD) last year."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_ytd_last_year}, ${sum_net_revenue_less_obi_cst_ytd_last_year}) ;;
+  }
+
+# Last Cost Model Month
+  measure: operating_ratio_lcm01 {
+    label: "Operating Ratio Last Cost Model Month"
+    group_label: "Operating Ratio"
+    group_item_label: "Last Cost Model Month"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing last month."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_lcm01}, ${sum_net_revenue_less_obi_lcm01}) ;;
+  }
+
+# Last Cost Model Month Last Year
+  measure: operating_ratio_lcm01_last_year {
+    label: "Operating Ratio Last Cost Model Month Last Year"
+    group_label: "Operating Ratio"
+    group_item_label: "Last Cost Model Month Last Year"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing last month of last year."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_lcm01_last_year}, ${sum_net_revenue_less_obi_lcm01_last_year}) ;;
+  }
+
+# Last 3 Cost Model Months
+  measure: operating_ratio_lcm03 {
+    label: "Operating Ratio Last 3 Cost Model Months"
+    group_label: "Operating Ratio"
+    group_item_label: "Last 3 Cost Model Months"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing last 3 months."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_lcm03}, ${sum_net_revenue_less_obi_lcm03}) ;;
+  }
+
+# Last 3 Cost Model Months Last Year
+  measure: operating_ratio_lcm03_last_year {
+    label: "Operating Ratio Last 3 Cost Model Months Last Year"
+    group_label: "Operating Ratio"
+    group_item_label: "Last 3 Cost Model Months Last Year"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing last 3 months of last year."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_lcm03_last_year}, ${sum_net_revenue_less_obi_lcm03_last_year}) ;;
+  }
+
+# Last Six Cost Model Months
+  measure: operating_ratio_lcm06 {
+    label: "Operating Ratio Last Six Cost Model Months"
+    group_label: "Operating Ratio"
+    group_item_label: "Last Six Cost Model Months"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing last six months."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_lcm06}, ${sum_net_revenue_less_obi_lcm06}) ;;
+  }
+
+# Last 12 Cost Model Months
+  measure: operating_ratio_lcm12 {
+    label: "Operating Ratio Last 12 Cost Model Months"
+    group_label: "Operating Ratio"
+    group_item_label: "Last 12 Cost Model Months"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing last 12 months."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_lcm12}, ${sum_net_revenue_less_obi_lcm12}) ;;
+  }
+
+# Last 12 Cost Model Months Last Year
+  measure: operating_ratio_lcm12_last_year {
+    label: "Operating Ratio Last 12 Cost Model Months Last Year"
+    group_label: "Operating Ratio"
+    group_item_label: "Last 12 Cost Model Months Last Year"
+    description: "The Operating Ratio % of the shipment (Total Cost divided by the Net Revenue Less Off Bill Incentive (OBI)) with costing last 12 months last year."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_tot_cst_lcm12_last_year}, ${sum_net_revenue_less_obi_lcm12_last_year}) ;;
+  }
+
+
+############################################################################################################################
+# Total Cost
+# Time Periods: YTD Cost Model, YTD Last Year Cost Model, Last Cost Model Month, Last Cost Model Month Last Year,
+#               Last Six Cost Model Months, Last 12 Cost Model Months, Last 12 Cost Model Months Last Year
+# Modified 4/22/2020 
+############################################################################################################################
+# YTD Cost Months
+  measure: sum_tot_cst_ytd {
+    label: "Total Cost YTD"
+    group_label: "Total Cost"
+    group_item_label: "YTD"
+    description: "Total operational cost of moving the shipment year to date (YTD). i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcmytd : "0"]
+  }
+
+# YTD Last Year Cost Months
+  measure: sum_tot_cst_ytd_last_year {
+    label: "Total Cost YTD Last Year"
+    group_label: "Total Cost"
+    group_item_label: "YTD Last Year"
+    description: "Total operational cost of moving the shipment year to date (YTD) last year. i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcmytd : "-1"]
+  }
+
+# Last Cost Model Month
+  measure: sum_tot_cst_lcm01 {
+    label: "Total Cost Last Cost Model Month"
+    group_label: "Total Cost"
+    group_item_label: "Last Cost Model Month"
+    description: "Total operational cost of moving the shipment for the last cost model month. i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcm01 : "0"]
+  }
+
+# Last Cost Model Month Last Year
+  measure: sum_tot_cst_lcm01_last_year {
+    label: "Total Cost Last Cost Model Month Last Year"
+    group_label: "Total Cost"
+    group_item_label: "Last Cost Model Month Last Year"
+    description: "Total operational cost of moving the shipment for the last cost model month last year. i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcm01 : "-1"]
+  }
+
+# Last 3 Cost Model Months
+  measure: sum_tot_cst_lcm03 {
+    label: "Total Cost Last 3 Cost Model Months"
+    group_label: "Total Cost"
+    group_item_label: "Last 3 Cost Model Months"
+    description: "Total operational cost of moving the shipment for the last 3 cost model months. i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcm03 : "0"]
+  }
+
+# Last 3 Cost Model Months Last Year
+  measure: sum_tot_cst_lcm03_last_year {
+    label: "Total Cost Last 3 Cost Model Months Last Year"
+    group_label: "Total Cost"
+    group_item_label: "Last 3 Cost Model Months Last Year"
+    description: "Total operational cost of moving the shipment for the last 3 cost model months last year. i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcm03 : "-1"]
+  }
+
+# Last Six Cost Model Months
+  measure: sum_tot_cst_lcm06 {
+    label: "Total Cost Last Six Cost Model Months"
+    group_label: "Total Cost"
+    group_item_label: "Last Six Cost Model Months"
+    description: "Total operational cost of moving the shipment for the last six cost model months. i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcm06 : "0"]
+  }
+
+# Last 12 Cost Model Months
+  measure: sum_tot_cst_lcm12 {
+    label: "Total Cost Last 12 Cost Model Months"
+    group_label: "Total Cost"
+    group_item_label: "Last 12 Cost Model Months"
+    description: "Total operational cost of moving the shipment for the last 12 cost model months. i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcm12 : "0"]
+  }
+
+# Last 12 Cost Model Months Last Year
+  measure: sum_tot_cst_lcm12_last_year {
+    label: "Total Cost Last 12 Cost Model Months Last Year"
+    group_label: "Total Cost"
+    group_item_label: "Last 12 Cost Model Months Last Year"
+    description: "Total operational cost of moving the shipment for the last 12 cost model months last year. i.e  sum of total direct cost and total overhead cost."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_cst} ;;
+    filters: [pre_computed_calendar.ind_lcm12 : "-1"]
+  }
+
+############################################################################################################################
+# Total Direct Cost
+# Time Periods: YTD Cost Model, YTD Last Year Cost Model
+#
+# Modified 4/22/2020 
+############################################################################################################################
+# YTD Cost Months
+  measure: sum_tot_dir_cst_ytd {
+    label: "Total Direct (Fixed) Cost YTD"
+    group_label: "Total Direct (Fixed) Cost"
+    group_item_label: "YTD"
+    description: "The Total Direct (Fixed) Cost of the shipment year to date (YTD)."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_dir_cst} ;;
+    filters: [pre_computed_calendar.ind_lcmytd : "0"]
+  }
+
+# YTD Last Year Cost Months
+  measure: sum_tot_dir_cst_ytd_last_year {
+    label: "Total Direct Cost (Fixed) YTD Last Year"
+    group_label: "Total Direct (Fixed) Cost"
+    group_item_label: "YTD Last Year"
+    description: "The Total Direct (Fixed) Cost of the shipment year to date (YTD) last year."
+    type: sum
+    value_format_name: usd_0
+    sql: ${tot_dir_cst} ;;
+    filters: [pre_computed_calendar.ind_lcmytd : "-1"]
+  }
+
+############################################################################################################################
+# Measure: Distance Sum
+# Time Periods: YTD, YTD Last Year, Last Revenue Date
+# Modified 4/24/2020 
+############################################################################################################################
+# YTD
+  measure: sum_sic_miles_ytd {
+    label: "SIC Miles YTD"
+    group_label: "SIC Miles"
+    group_item_label: "YTD"
+    description: "The total miles travelled SIC to SIC for shipments year to date (YTD)."
+    type: sum
+    value_format_name: decimal_0
+    hidden: yes
+    sql: ${sic_miles} ;;
+    filters: [pre_computed_calendar.ind_ytd: "0"]
+  }
+
+# YTD Last Year
+  measure: sum_sic_miles_ytd_last_year {
+    label: "SIC Miles YTD Last Year"
+    group_label: "SIC Miles"
+    group_item_label: "YTD Last Year"
+    description: "The total miles travelled SIC to SIC for shipments year to date (YTD) last year."
+    type: sum
+    value_format_name: decimal_0
+    hidden: yes
+    sql: ${sic_miles} ;;
+    filters: [pre_computed_calendar.ind_ytd: "-1"]
+  }
+
+# Last Revenue Date
+  measure: sum_sic_miles_lst_rev_dt {
+    label: "SIC Miles Last Revenue Date"
+    group_label: "SIC Miles"
+    group_item_label: "Last Revenue Date"
+    description: "The total miles travelled SIC to SIC for shipments last revenue date."
+    type: sum
+    value_format_name: decimal_0
+    sql: ${sic_miles} ;;
+    filters: [pre_computed_calendar.is_lst_rev_date: "Yes"]
+  }
+
+
+
+############################################################################################################################
+# Measure: SIC Miles per Shipment
+# Time Periods: YTD, YTD Last Year
+# Modified 4/24/2020 
+############################################################################################################################
+# YTD
+  measure: sum_sic_miles_per_shipment_ytd {
+    label: "SIC Miles per Shipment YTD"
+    group_label: "SIC Miles per Shipment"
+    group_item_label: "YTD"
+    description: "The total miles per shipment SIC to SIC year to date (YTD)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_sic_miles_ytd}, ${count_shipment_ytd}) ;;
+  }
+
+# YTD Last Year
+  measure: sum_sic_miles_per_shipment_ytd_last_year {
+    label: "SIC Miles per Shipment YTD Last Year"
+    group_label: "SIC Miles per Shipment"
+    group_item_label: "YTD Last Year"
+    description: "The total miles per shipment SIC to SIC year to date (YTD) last year."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_sic_miles_ytd_last_year}, ${count_shipment_ytd_last_year}) ;;
+  }
+
+############################################################################################################################
+# Measure: Change SIC Miles per Shipment - Total; Revenue and Percent
+# Time Periods:
+#         YTD vs., YTD Last Year
+# Modified 4/24/2020 
+############################################################################################################################
+  measure: change_amt_sum_sic_miles_per_shipment_ytd_yoy {
+    label: "SIC Miles per Shipment Change YTD YOY"
+    group_label: "SIC Miles per Shipment"
+    group_item_label: "Change YTD YOY"
+    description: "The difference in SIC Miles per Shipment year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: decimal_0
+    sql: ${sum_sic_miles_per_shipment_ytd} - ${sum_sic_miles_per_shipment_ytd_last_year} ;;
+  }
+
+  measure: change_pct_sum_sic_miles_per_shipment_ytd_yoy {
+    label: "SIC Miles per Shipment Change % YTD YOY"
+    group_label: "SIC Miles per Shipment"
+    group_item_label: "Change % YTD YOY"
+    description: "Percent Change in SIC Miles per Shipment year to date (YTD) year over year (YOY)."
+    type: number
+    value_format_name: percent_1
+    sql: safe_divide(${sum_sic_miles_per_shipment_ytd} - ${sum_sic_miles_per_shipment_ytd_last_year}, ${sum_sic_miles_per_shipment_ytd_last_year}) ;;
+  }
+
+############################################################################################################################
+# Measure: Ton Miles
+# Time Periods: Last Revenue Date
+# Modified 6/19/2020 
+############################################################################################################################
+# Last Revenue Date
+  measure: sum_ton_miles_lst_rev_dt {
+    label: "Ton Miles Last Revenue Date"
+    group_label: "Ton Miles"
+    group_item_label: "Last Revenue Date"
+    description: "Product of Weight in tons and SIC Miles for the last revenue date"
+    type: sum
+    value_format_name: decimal_2
+    sql: ${ton_miles} ;;
+    filters: [pre_computed_calendar.is_lst_rev_date: "Yes"]
+  }
+
+############################################################################################################################
+# Measure: Lenght of Haul
+# Time Periods: Last Revenue Date
+# Modified 6/19/2020 
+############################################################################################################################
+# Last Revenue Date
+  measure: length_of_haul_lst_rev_dt {
+    label: "Length of Haul Last Revenue Date"
+    group_label: "Length of Haul"
+    group_item_label: "Last Revenue Date"
+    description: "Weighted average of SIC Miles and Weight divided by Weight for the last revenue date"
+    type: number
+    value_format_name: decimal_2
+    sql: safe_divide(${sum_ton_miles_lst_rev_dt},${sum_weight_lst_rev_dt}) * 2000;;
+  }
+
+############################################################################################################################
+# Measure: Days Delayed / Service Days
+# Modified 8/31/2021 
+############################################################################################################################
+
+  measure: service_days {
+    label: "Service Days"
+    description: "Count of total revenue service days"
+    hidden: no
+    type: sum_distinct
+    value_format_name: decimal_0
+    sql: case when ${pre_computed_calendar.rev_day} > 0.0
+                   and ${pre_computed_calendar.cldr_date_date} > ${pickup_date}
+                  and ${pre_computed_calendar.cldr_date_date} <= ${est_dlvry_date} then 1
+         else 0
+         end ;;
+    sql_distinct_key: ${pre_computed_calendar.cldr_date_date} ;;
+  }
+
+  measure: days_delayed {
+    label: "Days Delayed"
+    description: "Count of total revenue days the service is delayed"
+    hidden: no
+    type: sum_distinct
+    value_format_name: decimal_0
+    sql: case when ${pre_computed_calendar.rev_day} > 0.0
+                   and ${pre_computed_calendar.cldr_date_date} > ${est_dlvry_date}
+                  and ${pre_computed_calendar.cldr_date_date} <= ${delivery_date} then 1
+         else 0
+         end ;;
+    sql_distinct_key: ${pre_computed_calendar.cldr_date_date} ;;
+  }
+

@@ -1,0 +1,150 @@
+connection: "gbq"
+label: "business"
+
+# include all the views and derived tables
+include: "/business/Views_Extended/*"
+include: "/business/Views/*.view"
+include: "/business/Derived_Table_Views/*.view"
+include: "/business/Derived_Table_Views/Aggregate_Tables/*.view"
+include: "/folder_name/Views/pre_computed_pricing_agreement.view"
+include: "/folder_name/Views/clm_claim_rds.view"
+include: "/folder_name/Views/pre_computed_calendar.view"
+include: "/folder_name/Views/employee_current.view"
+include: "/customer_experience/Explores/*.lkml"
+include: "/folder_name/Views/pre_computed_perspective_shipment.view.lkml"
+include: "/business/Explores/pre_computed_finance_reports_rds_explore.lkml"
+include: "/business/Explores/finance_pre_computed_shipment_explore.lkml"
+
+# apply refinements (if needed)
+include: "/business/finance_refinements.lkml"
+
+# bigquery_datetime_as_timestamp: no
+
+explore: finance_pre_computed_shipment_claims {
+  label: "Claims"
+  hidden: no
+  description: "This explore provides all information pertaining to Claims
+  including SIC chargebility, rebuttals and payments"
+  # extension: required
+  extends: [finance_pre_computed_shipment]
+  fields: [
+    finance_pre_computed_shipment.claims*,  #set of fields from finance_pre_computed_shipment
+
+    finance_clm_claim_rds.claims_set*, #set of fields from clm_claim_rds
+
+    pre_computed_calendar.cldr_date_date,
+    pre_computed_calendar.cldr_date_day_of_week,
+    pre_computed_calendar.cldr_date_month,
+    pre_computed_calendar.cldr_date_month_name,
+    pre_computed_calendar.cldr_date_year,
+    pre_computed_calendar.is_lst_us_fin_rptg_date,
+    pre_computed_calendar.us_fin_rptg_date_date,
+    pre_computed_calendar.us_fin_rptg_date_day_of_week,
+    pre_computed_calendar.ind_wk,
+    pre_computed_calendar.ind_mo,
+    pre_computed_calendar.ind_qtr,
+    pre_computed_calendar.ind_yr,
+    pre_computed_calendar.ind_wtd,
+    pre_computed_calendar.ind_mtd,
+    pre_computed_calendar.ind_qtd,
+    pre_computed_calendar.ind_ytd,
+    pre_computed_calendar.ind_lcm01,
+    pre_computed_calendar.ind_lcm03,
+    pre_computed_calendar.ind_lcm12,
+    pre_computed_calendar.ind_lcmytd,
+    pre_computed_calendar.rev_day,
+    pre_computed_pricing_agreement_pa_version.pa_cust_vers_eff_dt_date,
+    approved_employee.full_name,
+    filed_employee.full_name,
+    current_assigned_employee.full_name,
+    examined_by_employee.full_name,
+
+    clm_chargeable_service_center_rds.claims_set*,
+
+    sic_chargeability_location.lvl1_nm,
+    sic_chargeability_location.lvl2_nm,
+    sic_chargeability_location.lvl3_sic_cd,
+    sic_chargeability_location.lvl4_sic_cd,
+
+    clm_rebuttal_rds.claims_set*,
+    clm_payment_rds.claims_set*,
+
+    claimant_information.name,
+
+    all_sales_hierarchy*,
+
+    claims_navigation*,
+
+    loc_ops_hierarchy_flatten_origin*,
+    loc_ops_hierarchy_flatten_destination*
+
+  ]
+  join: approved_employee {
+    type: left_outer
+    sql_on: ${finance_clm_claim_rds.aprvd_by_empl_id} = ${approved_employee.employee_number} ;;
+    relationship: many_to_one
+  }
+  join: filed_employee {
+    type: left_outer
+    sql_on: ${finance_clm_claim_rds.filed_by_empl_id} = ${filed_employee.employee_number} ;;
+    relationship: many_to_one
+  }
+  join: current_assigned_employee {
+    type: left_outer
+    sql_on: ${finance_clm_claim_rds.curr_asgnee_empl_id} = ${current_assigned_employee.employee_number} ;;
+    relationship: many_to_one
+  }
+  join: examined_by_employee {
+    type: left_outer
+    sql_on: ${finance_clm_claim_rds.examined_by_empl_id} = ${examined_by_employee.employee_number} ;;
+    relationship: many_to_one
+  }
+  join: clm_chargeable_service_center_rds {
+    type: left_outer
+    sql_on: ${finance_clm_claim_rds.pk_clm_id} = ${clm_chargeable_service_center_rds.clm_id} ;;
+    relationship: one_to_many
+  }
+  join: sic_chargeability_location {
+    type: left_outer
+    sql_on: ${clm_chargeable_service_center_rds.sic_cd} = ${sic_chargeability_location.lvl5_sic_cd} ;;
+    relationship: many_to_one
+  }
+  join: clm_rebuttal_rds {
+    type: left_outer
+    sql_on: ${finance_clm_claim_rds.pk_clm_id} = ${clm_rebuttal_rds.clm_id} ;;
+    relationship: one_to_many
+  }
+  join: clm_payment_rds {
+    type: left_outer
+    sql_on: ${finance_clm_claim_rds.pk_clm_id}=${clm_payment_rds.clm_id} ;;
+    relationship: one_to_many
+  }
+  join: claimant_information {
+    type: left_outer
+    sql_on: ${finance_clm_claim_rds.pk_clm_id}=${claimant_information.pk_clm_id} ;;
+    # one-to-one join because number of claim IDs is equal to the number of distinct claim IDs in the claimaint_information DT view
+    relationship: one_to_one
+  }
+  join: claims_navigation {
+    type: cross
+    relationship: many_to_one
+  }
+  join: loc_ops_hierarchy_flatten_origin {
+    from:  loc_ops_hierarchy_flatten
+    view_label: "Origin Location"
+    type: left_outer
+    sql_on: ${finance_pre_computed_shipment.origin_sic_code} = ${loc_ops_hierarchy_flatten_origin.lvl5_sic_cd} ;;
+    relationship: many_to_one
+  }
+  join: loc_ops_hierarchy_flatten_destination {
+    from:  loc_ops_hierarchy_flatten
+    view_label: "Destination Location"
+    type: left_outer
+    sql_on: ${finance_pre_computed_shipment.destination_sic_code} = ${loc_ops_hierarchy_flatten_destination.lvl5_sic_cd} ;;
+    relationship: many_to_one
+  }
+}
+
+explore: +pre_computed_finance_reports_rds{}
+
+
